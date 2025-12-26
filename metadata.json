@@ -1,0 +1,502 @@
+[
+  {
+    "titulo": "Fame is a Gun",
+    "artista": "Addison Rae",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Bloodline",
+    "artista": "Alex Warren, Jelly Roll",
+    "genero": "Country"
+  },
+  {
+    "titulo": "Eternity",
+    "artista": "Alex Warren",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Ordinary",
+    "artista": "Alex Warren",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "we can't be friends (wait for your love)",
+    "artista": "Ariana Grande",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "dear anxiety",
+    "artista": "BLÜ EYES",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Beautiful Things",
+    "artista": "Benson Boone",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Mystical Magical",
+    "artista": "Benson Boone",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Slow It Down",
+    "artista": "Benson Boone",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "All The Way",
+    "artista": "BigXthaPlug, Bailey Zimmerman",
+    "genero": "Hip-Hop"
+  },
+  {
+    "titulo": "BIRDS OF A FEATHER",
+    "artista": "Billie Eilish",
+    "genero": "Alternative"
+  },
+  {
+    "titulo": "Still Into You",
+    "artista": "CYRIL, maryjo",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "The Fear of Being Human Remains",
+    "artista": "Candi Carpenter",
+    "genero": "Indie"
+  },
+  {
+    "titulo": "HOT TO GO!",
+    "artista": "Chappell Roan",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "party 4 u",
+    "artista": "Charli xcx",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Pretty Little Baby",
+    "artista": "Connie Francis",
+    "genero": "Classic Pop"
+  },
+  {
+    "titulo": "Talk to Me",
+    "artista": "Damiano David, Tyla, Nile Rodgers",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Austin",
+    "artista": "Dasha",
+    "genero": "Country"
+  },
+  {
+    "titulo": "Gone Gone Gone",
+    "artista": "David Guetta, Teddy Swims, Tones and I",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Jealous Type",
+    "artista": "Doja Cat",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Dance The Night",
+    "artista": "Dua Lipa",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Houdini",
+    "artista": "Dua Lipa",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Illusion",
+    "artista": "Dua Lipa",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "A Little More",
+    "artista": "Ed Sheeran",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Azizam",
+    "artista": "Ed Sheeran",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "HOME",
+    "artista": "Eddie Benjamin, Shawn Mendes",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Little Things",
+    "artista": "Ella Mai",
+    "genero": "R&B"
+  },
+  {
+    "titulo": "Pretty Little Baby",
+    "artista": "Eloise",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "RATHER BE",
+    "artista": "GIVĒON",
+    "genero": "R&B"
+  },
+  {
+    "titulo": "As It Was",
+    "artista": "Harry Styles",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Too Sweet",
+    "artista": "Hozier",
+    "genero": "Alternative"
+  },
+  {
+    "titulo": "EYES CLOSED",
+    "artista": "JISOO, ZAYN",
+    "genero": "K-Pop"
+  },
+  {
+    "titulo": "Lovin On Me",
+    "artista": "Jack Harlow",
+    "genero": "Hip-Hop"
+  },
+  {
+    "titulo": "Blue Strips",
+    "artista": "Jessie Murph",
+    "genero": "Country"
+  },
+  {
+    "titulo": "DAISIES",
+    "artista": "Justin Bieber",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "YUKON",
+    "artista": "Justin Bieber",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "bandaids",
+    "artista": "Katy Perry",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "luther",
+    "artista": "Kendrick Lamar",
+    "genero": "Hip-Hop"
+  },
+  {
+    "titulo": "Abracadabra",
+    "artista": "Lady Gaga",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Disease",
+    "artista": "Lady Gaga",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "The Dead Dance",
+    "artista": "Lady Gaga",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Die With A Smile",
+    "artista": "Lady Gaga, Bruno Mars",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Messy",
+    "artista": "Lola Young",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Fast Car",
+    "artista": "Luke Combs",
+    "genero": "Country"
+  },
+  {
+    "titulo": "bittersweet",
+    "artista": "Madison Beer",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "yes baby",
+    "artista": "Madison Beer",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Is It a Crime",
+    "artista": "Mariah the Scientist, Kali Uchis",
+    "genero": "R&B"
+  },
+  {
+    "titulo": "Belong Together",
+    "artista": "Mark Ambor",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Creepin'",
+    "artista": "Metro Boomin, The Weeknd, 21 Savage",
+    "genero": "Hip-Hop"
+  },
+  {
+    "titulo": "Easy Lover",
+    "artista": "Miley Cyrus",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "End of the World",
+    "artista": "Miley Cyrus",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Flowers",
+    "artista": "Miley Cyrus",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "I Met A Boy",
+    "artista": "Mimi Webb",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "What I Want",
+    "artista": "Morgan Wallen, Tate McRae",
+    "genero": "Country"
+  },
+  {
+    "titulo": "Made For Me",
+    "artista": "Muni Long",
+    "genero": "R&B"
+  },
+  {
+    "titulo": "Nice To Meet You",
+    "artista": "Myles Smith",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "KO",
+    "artista": "NLE The Great",
+    "genero": "Hip-Hop"
+  },
+  {
+    "titulo": "Stick Season",
+    "artista": "Noah Kahan",
+    "genero": "Folk"
+  },
+  {
+    "titulo": "I Had Some Help",
+    "artista": "Post Malone, Morgan Wallen",
+    "genero": "Country"
+  },
+  {
+    "titulo": "WHERE IS MY HUSBAND!",
+    "artista": "RAYE",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "APT.",
+    "artista": "ROSÉ, Bruno Mars",
+    "genero": "K-Pop"
+  },
+  {
+    "titulo": "Messy",
+    "artista": "ROSÉ",
+    "genero": "K-Pop"
+  },
+  {
+    "titulo": "Love Me Not",
+    "artista": "Ravyn Lenae",
+    "genero": "R&B"
+  },
+  {
+    "titulo": "Calm Down",
+    "artista": "Rema, Selena Gomez",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "30 For 30",
+    "artista": "SZA, Kendrick Lamar",
+    "genero": "R&B"
+  },
+  {
+    "titulo": "Kill Bill",
+    "artista": "SZA",
+    "genero": "R&B"
+  },
+  {
+    "titulo": "Snooze",
+    "artista": "SZA",
+    "genero": "R&B"
+  },
+  {
+    "titulo": "Busy Woman",
+    "artista": "Sabrina Carpenter",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Espresso",
+    "artista": "Sabrina Carpenter",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Manchild",
+    "artista": "Sabrina Carpenter",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Please Please Please",
+    "artista": "Sabrina Carpenter",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Tears",
+    "artista": "Sabrina Carpenter",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "In The Dark",
+    "artista": "Selena Gomez",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "A Bar Song (Tipsy)",
+    "artista": "Shaboozey",
+    "genero": "Country"
+  },
+  {
+    "titulo": "Until I Found You",
+    "artista": "Stephen Sanchez",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "I know love",
+    "artista": "Tate McRae, The Kid LAROI",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Just Keep Watching",
+    "artista": "Tate McRae",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Revolving door",
+    "artista": "Tate McRae",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Sports car",
+    "artista": "Tate McRae",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "greedy",
+    "artista": "Tate McRae",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Anti-Hero",
+    "artista": "Taylor Swift",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Cruel Summer",
+    "artista": "Taylor Swift",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "The Fate of Ophelia",
+    "artista": "Taylor Swift",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Lose Control",
+    "artista": "Teddy Swims",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "The Door",
+    "artista": "Teddy Swims",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "No One Noticed",
+    "artista": "The Marías",
+    "genero": "Indie"
+  },
+  {
+    "titulo": "Save Your Tears (Remix)",
+    "artista": "The Weeknd, Ariana Grande",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Die For You (Remix)",
+    "artista": "The Weeknd, Ariana Grande",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "One Of The Girls",
+    "artista": "The Weeknd, JENNIE, Lily-Rose Depp",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "BLISS",
+    "artista": "Tyla",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "CHANEL",
+    "artista": "Tyla",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "Water",
+    "artista": "Tyla",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "DYNAMITE",
+    "artista": "Tyla, Wizkid",
+    "genero": "Pop"
+  },
+  {
+    "titulo": "I Remember Everything",
+    "artista": "Zach Bryan, Kacey Musgraves",
+    "genero": "Country"
+  },
+  {
+    "titulo": "Something In The Orange",
+    "artista": "Zach Bryan",
+    "genero": "Country"
+  },
+  {
+    "titulo": "back to friends",
+    "artista": "sombr",
+    "genero": "Indie"
+  },
+  {
+    "titulo": "undressed",
+    "artista": "sombr",
+    "genero": "Indie"
+  },
+  {
+    "titulo": "Golden",
+    "artista": "KPop Demon Hunters",
+    "genero": "K-Pop"
+  },
+  {
+    "titulo": "How It's Done",
+    "artista": "KPop Demon Hunters",
+    "genero": "K-Pop"
+  },
+  {
+    "titulo": "Your Idol",
+    "artista": "KPop Demon Hunters",
+    "genero": "K-Pop"
+  }
+]

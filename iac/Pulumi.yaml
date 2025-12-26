@@ -1,0 +1,6 @@
+name: fog-music
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: Fog Music Player - Infrastructure as Code

@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+venv/
+*.pyc
+
+# Pulumi
+.pulumi/
+**/.pulumi/
+
+# Archivos Locales
+audios/
+miniaturas/
+.env
