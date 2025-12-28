@@ -1,14 +1,38 @@
 // Página de Biblioteca - Muestra todas las canciones con búsqueda y filtros
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import SongCard from "../components/SongCard";
 import { useMusicContext } from "../App";
+import { trackSearch } from "../services/swService";
 
 export default function Library() {
   const { songs, currentSong, isPlaying, isLoading, playSong } = useMusicContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
   const [sortBy, setSortBy] = useState("titulo");
+  
+  // Debounce para tracking de búsquedas
+  const searchTimeoutRef = useRef(null);
+
+  // Trackear búsquedas con debounce
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (searchTerm.length >= 2) {
+      searchTimeoutRef.current = setTimeout(() => {
+        console.log(`🔍 [Library] Tracking búsqueda: "${searchTerm}"`);
+        trackSearch(searchTerm);
+      }, 1000); // Esperar 1 segundo después de que el usuario deje de escribir
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm]);
 
   // Obtener géneros únicos
   const genres = useMemo(() => {

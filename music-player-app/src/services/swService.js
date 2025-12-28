@@ -1,7 +1,8 @@
-// Servicio de Service Worker
-// Maneja el registro y comunicación con el SW
+// Servicio de Service Worker - FOG COMPUTING
+// Maneja el registro y comunicación con el SW para aprendizaje local
 
 let swRegistration = null;
+let messageHandlers = new Map();
 
 // ============================================
 // Registro del Service Worker
@@ -18,25 +19,57 @@ export async function registerServiceWorker() {
       scope: "/",
     });
 
-    console.log("✅ Service Worker registrado:", swRegistration.scope);
+    console.log("✅ [SW-Service] Service Worker registrado:", swRegistration.scope);
 
     // Escuchar actualizaciones
     swRegistration.addEventListener("updatefound", () => {
       const newWorker = swRegistration.installing;
-      console.log("🔄 Nueva versión del Service Worker encontrada");
+      console.log("🔄 [SW-Service] Nueva versión del Service Worker encontrada");
 
       newWorker.addEventListener("statechange", () => {
         if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-          console.log("📢 Nueva versión disponible, recarga para actualizar");
+          console.log("📢 [SW-Service] Nueva versión disponible, recarga para actualizar");
         }
       });
     });
 
+    // Configurar escucha de mensajes del SW
+    setupMessageListener();
+
     return swRegistration;
   } catch (error) {
-    console.error("❌ Error al registrar Service Worker:", error);
+    console.error("❌ [SW-Service] Error al registrar Service Worker:", error);
     return null;
   }
+}
+
+// ============================================
+// Escuchar mensajes del Service Worker
+// ============================================
+
+function setupMessageListener() {
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    const { type, payload } = event.data;
+    console.log(`📩 [SW-Service] Mensaje del SW: ${type}`);
+    
+    // Llamar handlers registrados
+    const handlers = messageHandlers.get(type) || [];
+    handlers.forEach(handler => handler(payload));
+  });
+}
+
+export function onSWMessage(type, handler) {
+  if (!messageHandlers.has(type)) {
+    messageHandlers.set(type, []);
+  }
+  messageHandlers.get(type).push(handler);
+  
+  // Retornar función para remover handler
+  return () => {
+    const handlers = messageHandlers.get(type) || [];
+    const index = handlers.indexOf(handler);
+    if (index > -1) handlers.splice(index, 1);
+  };
 }
 
 // ============================================
@@ -46,36 +79,125 @@ export async function registerServiceWorker() {
 export function sendMessageToSW(message) {
   if (navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage(message);
+    return true;
   }
+  console.warn("⚠️ [SW-Service] No hay Service Worker controlador");
+  return false;
 }
 
-export function prefetchSongs(songUrls) {
+// ============================================
+// Pre-descarga de canciones (con desencriptación)
+// ============================================
+
+export function prefetchSongs(songs, count = 3) {
+  console.log(`🔄 [SW-Service] Solicitando pre-descarga de ${count} canciones`);
+  
+  // Enviar datos completos de las canciones para pre-descarga
+  const songsData = songs.slice(0, count).map(song => ({
+    song_id: song.song_id,
+    titulo: song.titulo,
+    artista: song.artista,
+    url: `https://fog-music-media.s3.us-east-1.amazonaws.com/${song.s3_song_key}`
+  }));
+  
   sendMessageToSW({
     type: "PREFETCH_SONGS",
-    payload: { songKeys: songUrls },
+    payload: { songs: songsData, count },
   });
 }
+
+// ============================================
+// Tracking de reproducción
+// ============================================
+
+export function trackPlayTime(songId, seconds, artist, genre) {
+  console.log(`⏱️ [SW-Service] Reportando tiempo: ${songId} +${seconds}s`);
+  sendMessageToSW({
+    type: "TRACK_PLAY_TIME",
+    payload: { songId, seconds, artist, genre },
+  });
+}
+
+// ============================================
+// Tracking de búsquedas
+// ============================================
+
+export function trackSearch(query) {
+  if (!query || query.trim().length < 2) return;
+  
+  console.log(`🔍 [SW-Service] Reportando búsqueda: "${query}"`);
+  sendMessageToSW({
+    type: "TRACK_SEARCH",
+    payload: { query: query.trim() },
+  });
+}
+
+// ============================================
+// Obtener preferencias del SW
+// ============================================
+
+export function getPreferences() {
+  return new Promise((resolve) => {
+    const handler = (payload) => {
+      resolve(payload);
+    };
+    
+    const removeHandler = onSWMessage("PREFERENCES_DATA", handler);
+    
+    sendMessageToSW({ type: "GET_PREFERENCES" });
+    
+    // Timeout después de 3 segundos
+    setTimeout(() => {
+      removeHandler();
+      resolve(null);
+    }, 3000);
+  });
+}
+
+// ============================================
+// Sincronización con DynamoDB
+// ============================================
+
+export function requestDynamoSync() {
+  console.log("☁️ [SW-Service] Solicitando sincronización con DynamoDB");
+  sendMessageToSW({ type: "SYNC_TO_DYNAMO" });
+}
+
+// ============================================
+// Notificar cierre de aplicación
+// ============================================
+
+export function notifyAppClosing() {
+  console.log("🚪 [SW-Service] Notificando cierre de aplicación");
+  sendMessageToSW({ type: "APP_CLOSING" });
+}
+
+// ============================================
+// Limpiar cache
+// ============================================
 
 export function clearSongCache() {
   sendMessageToSW({ type: "CLEAR_SONG_CACHE" });
 }
 
+// ============================================
+// Estado del cache
+// ============================================
+
 export async function getCacheStatus() {
   return new Promise((resolve) => {
-    const handler = (event) => {
-      if (event.data.type === "CACHE_STATUS") {
-        navigator.serviceWorker.removeEventListener("message", handler);
-        resolve(event.data.payload);
-      }
+    const handler = (payload) => {
+      resolve(payload);
     };
 
-    navigator.serviceWorker.addEventListener("message", handler);
+    const removeHandler = onSWMessage("CACHE_STATUS", handler);
+    
     sendMessageToSW({ type: "GET_CACHE_STATUS" });
 
     // Timeout después de 3 segundos
     setTimeout(() => {
-      navigator.serviceWorker.removeEventListener("message", handler);
-      resolve({ songsCached: 0, cacheNames: [] });
+      removeHandler();
+      resolve({ encryptedCached: 0, decryptedCached: 0 });
     }, 3000);
   });
 }

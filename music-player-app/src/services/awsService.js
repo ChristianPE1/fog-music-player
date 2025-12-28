@@ -121,9 +121,53 @@ export async function updateUserTastes(genero) {
   });
 
   await docClient.send(command);
-  console.log(`🎵 Gustos actualizados: ${genero} = ${newCount}`);
+  console.log(`🎵 [AWS] Gustos actualizados: ${genero} = ${newCount}`);
   
   return currentTastes;
+}
+
+// ============================================
+// Sincronización de Preferencias FOG -> DynamoDB
+// ============================================
+
+export async function syncPreferencesToDynamo(preferences, topArtists, topGenres) {
+  if (!docClient) await initializeAWS();
+
+  console.log("☁️ [AWS] Sincronizando preferencias FOG con DynamoDB...");
+  console.log("   📊 Tiempo total escuchado:", preferences.totalListeningTime, "segundos");
+  console.log("   🎤 Top Artistas:", JSON.stringify(topArtists));
+  console.log("   🎵 Top Géneros:", JSON.stringify(topGenres));
+
+  // Convertir artistas a objeto para DynamoDB
+  const artistTastes = {};
+  topArtists.forEach(({ artist, plays }) => {
+    artistTastes[artist] = plays;
+  });
+
+  // Convertir géneros a objeto para DynamoDB
+  const genreTastes = {};
+  topGenres.forEach(({ genre, plays }) => {
+    genreTastes[genre] = plays;
+  });
+
+  const command = new PutCommand({
+    TableName: awsConfig.usersTable,
+    Item: {
+      device_id: getDeviceId(),
+      tastes: genreTastes,
+      artist_tastes: artistTastes,
+      play_time: preferences.playTime || {},
+      total_listening_time: preferences.totalListeningTime || 0,
+      search_history: (preferences.searchHistory || []).slice(-20),
+      last_sync: new Date().toISOString(),
+      last_updated: new Date().toISOString(),
+    },
+  });
+
+  await docClient.send(command);
+  console.log("✅ [AWS] Preferencias sincronizadas con DynamoDB exitosamente");
+  
+  return true;
 }
 
 // ============================================
