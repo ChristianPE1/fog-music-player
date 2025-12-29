@@ -42,20 +42,17 @@ export async function decryptAudio(encryptedData) {
 // Descargar y Desencriptar Canción (usando S3 con Cognito)
 // ============================================
 
-export async function fetchAndDecryptSong(s3Key) {
-  console.log("🔐 Descargando canción encriptada...", s3Key);
-  
+export async function fetchAndDecryptSong(s3Key) {  
   // Descargar usando credenciales de Cognito
   const encryptedData = await downloadSongFromS3(s3Key);
 
-  console.log("🔓 Desencriptando...");
   const decryptedData = await decryptAudio(encryptedData);
 
   // Crear Blob con el audio desencriptado
   const audioBlob = new Blob([decryptedData], { type: "audio/mpeg" });
   const audioUrl = URL.createObjectURL(audioBlob);
 
-  console.log("✅ Audio listo para reproducir");
+  console.log("Audio listo para reproducir");
   return audioUrl;
 }
 

@@ -42,7 +42,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     const loadArtistTastes = async () => {
       const likes = await getLikedSongs();
       setLikedSongs(likes);
-      console.log(`❤️ [Player] Cargados ${likes.length} likes`);
+      console.log(`[Player] Cargados ${likes.length} likes`);
     };
     loadArtistTastes();
     
@@ -76,9 +76,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     };
   }, []);
 
-  // ============================================
   // TRACKING DE TIEMPO DE REPRODUCCIÓN
-  // ============================================
 
   const reportPlayTime = useCallback(() => {
     if (!currentSong || !playStartTimeRef.current) return;
@@ -109,15 +107,12 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     return () => clearInterval(interval);
   }, [isPlaying, currentSong, reportPlayTime]);
 
-  // ============================================
   // SINCRONIZACIÓN CON DYNAMODB CADA 20 MIN
-  // ============================================
 
   useEffect(() => {
-    console.log("⏰ [Player] Iniciando intervalo de sincronización cada 20 minutos");
+    console.log("[Player] Iniciando intervalo de sincronización cada 20 minutos");
     
     syncIntervalRef.current = setInterval(() => {
-      console.log("☁️ [Player] Sincronización programada con DynamoDB (20 min)");
       requestDynamoSync();
     }, SYNC_INTERVAL_MS);
 
@@ -134,7 +129,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
 
   useEffect(() => {
     const handleBeforeUnload = (event) => {
-      console.log("🚪 [Player] Usuario cerrando la aplicación...");
+      console.log("[Player] Usuario cerrando la aplicación...");
       
       // Reportar último tiempo de reproducción
       reportPlayTime();
@@ -148,7 +143,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        console.log("�️ [Player] App en background - guardando estado...");
+        console.log("[Player] App en background - guardando estado...");
         reportPlayTime();
         requestDynamoSync();
       }
@@ -170,41 +165,39 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
   useEffect(() => {
     // Escuchar progreso de pre-descarga
     const removePrefetchHandler = onSWMessage("PREFETCH_PROGRESS", (payload) => {
-      console.log(`📥 [Player] Progreso pre-descarga: ${payload.current}/${payload.total} - ${payload.song}`);
+      console.log(`[Player] Progreso pre-descarga: ${payload.current}/${payload.total} - ${payload.song}`);
       setPrefetchStatus(payload);
     });
 
     // Escuchar solicitud de sync a DynamoDB
     const removeSyncHandler = onSWMessage("SYNC_PREFERENCES", async (payload) => {
-      console.log("☁️ [Player] Sincronizando preferencias con DynamoDB...");
       try {
         await syncPreferencesToDynamo(payload.preferences, payload.topArtists, payload.topGenres);
-        console.log("✅ [Player] Preferencias sincronizadas con DynamoDB");
+        console.log(`[Player] Preferencias sincronizadas con DynamoDB`);
       } catch (error) {
-        console.error("❌ [Player] Error sincronizando con DynamoDB:", error);
+        console.error(`[Player] Error sincronizando con DynamoDB:`, error);
       }
     });
 
     // Escuchar solicitud de pre-descarga del SW (el SW no tiene credenciales Cognito)
     const removePrefetchRequestHandler = onSWMessage("PREFETCH_REQUEST", async (payload) => {
-      console.log(`🔄 [Player] SW solicita pre-descarga de ${payload.songs.length} canciones`);
+      console.log(`[Player] SW solicita pre-descarga de ${payload.songs.length} canciones`);
       
       for (let i = 0; i < payload.songs.length; i++) {
         const song = payload.songs[i];
         
         // Verificar si ya está en el cache local
         if (prefetchCache.current.has(song.song_id)) {
-          console.log(`⏭️ [Player] Ya pre-descargada: ${song.titulo}`);
           continue;
         }
 
         try {
-          console.log(`📥 [Player] Pre-descargando [${i+1}/${payload.songs.length}]: ${song.titulo}`);
+          console.log(`[Player] Pre-descargando [${i+1}/${payload.songs.length}]: ${song.titulo}`);
           const s3Key = `songs/${song.song_id.substring(0, 12)}.enc`;
           const audioUrl = await fetchAndDecryptSong(s3Key);
           prefetchCache.current.set(song.song_id, audioUrl);
-          
-          console.log(`✅ [Player] Pre-descarga completada: ${song.titulo}`);
+
+          console.log(`[Player] Pre-descarga completada: ${song.titulo}`);
           
           // Actualizar estado de pre-descarga
           setPrefetchStatus({
@@ -214,11 +207,10 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
             status: "completed"
           });
         } catch (err) {
-          console.warn(`⚠️ [Player] Error pre-descargando ${song.titulo}:`, err);
+          console.warn(`[Player] Error pre-descargando ${song.titulo}:`, err);
         }
       }
-      
-      console.log(`🎉 [Player] Pre-descarga completada: ${payload.songs.length} canciones listas`);
+
     });
 
     return () => {
@@ -228,9 +220,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     };
   }, []);
 
-  // ============================================
   // LIMPIEZA AL DESMONTAR
-  // ============================================
 
   useEffect(() => {
     return () => {
@@ -242,15 +232,13 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     };
   }, []);
 
-  // ============================================
   // PRE-DESCARGA DE CANCIONES (PRIMERAS 3)
-  // ============================================
 
   const triggerPrefetch = useCallback((queueSongs) => {
     if (queueSongs.length === 0) return;
 
     const songsToPreload = queueSongs.slice(0, PREFETCH_COUNT);
-    console.log(`🔄 [Player] Solicitando pre-descarga de ${songsToPreload.length} canciones`);
+    console.log(`[Player] Solicitando pre-descarga de ${songsToPreload.length} canciones`);
     
     // Enviar al Service Worker para pre-descarga con desencriptación
     prefetchSongs(songsToPreload, PREFETCH_COUNT);
@@ -263,16 +251,14 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     }
   }, [queue, triggerPrefetch]);
 
-  // ============================================
   // GENERAR COLA AUTOMÁTICA (10 CANCIONES)
-  // ============================================
 
   const generateQueue = useCallback((currentSong) => {
     if (!songs || songs.length === 0) return;
     
     const newQueue = generateAutoQueue(songs, userTastes, currentSong, QUEUE_SIZE, artistTastes);
     setQueue(newQueue);
-    console.log(`🎵 [Player] Cola generada: ${newQueue.length} canciones (mostrando ${QUEUE_SIZE})`);
+    console.log(`[Player] Cola generada: ${newQueue.length} canciones (mostrando ${QUEUE_SIZE})`);
     
     // Log de las canciones en cola
     newQueue.forEach((song, i) => {
@@ -280,12 +266,19 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     });
   }, [songs, userTastes, artistTastes]);
 
+  // Generar cola inicial cuando las canciones estén disponibles
+  useEffect(() => {
+    if (songs.length > 0 && queue.length === 0 && !currentSong) {
+      console.log("[Player] Generando cola inicial...");
+      const initialQueue = generateAutoQueue(songs, userTastes, null, QUEUE_SIZE, artistTastes);
+      setQueue(initialQueue);
+    }
+  }, [songs, userTastes, artistTastes, queue.length, currentSong]);
+
   // Reproducir siguiente (declarado antes de usarse en useEffect)
   const playNextRef = useRef(null);
 
-  // ============================================
   // EVENTOS DE AUDIO
-  // ============================================
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -313,7 +306,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     };
 
     const handleError = (e) => {
-      console.error("❌ [Player] Error de audio:", e);
+      console.error("[Player] Error de audio:", e);
       setError("Error al reproducir el audio");
       setIsPlaying(false);
       setIsLoading(false);
@@ -332,9 +325,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     };
   }, [reportPlayTime]);
 
-  // ============================================
   // REPRODUCIR CANCIÓN
-  // ============================================
 
   const playSong = useCallback(async (song, fromQueue = false) => {
     setError(null);
@@ -369,7 +360,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
         prefetchCache.current.delete(song.song_id);
       } else {
         // Obtener key de S3 y desencriptar
-        console.log("📥 [Player] Descargando y desencriptando:", song.titulo);
+        console.log("[Player] Descargando y desencriptando:", song.titulo);
         const s3Key = getSongKey(song);
         audioUrl = await fetchAndDecryptSong(s3Key);
       }
@@ -399,10 +390,10 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
         generateQueue(song);
       }
 
-      console.log(`▶️ [Player] Reproduciendo: ${song.titulo} - ${song.artista}`);
+      console.log(`[Player] Reproduciendo: ${song.titulo} - ${song.artista}`);
 
     } catch (err) {
-      console.error("❌ [Player] Error al reproducir:", err);
+      console.error(`[Player] Error al reproducir:`, err);
       setError(err.message || "Error al reproducir la canción");
     } finally {
       setIsLoading(false);
@@ -424,10 +415,9 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     const nextSong = queue[0];
     const newQueue = queue.slice(1);
     setQueue(newQueue);
-    
-    console.log(`⏭️ [Player] Siguiente canción: ${nextSong.titulo}`);
-    console.log(`   📋 Quedan ${newQueue.length} canciones en cola`);
-    
+
+    console.log(`[Player] Siguiente canción: ${nextSong.titulo}`);
+
     playSong(nextSong, true);
     
     // Las siguientes canciones se pre-descargan automáticamente
@@ -439,54 +429,45 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     playNextRef.current = playNext;
   }, [playNext]);
 
-  // ============================================
   // REPRODUCIR ANTERIOR
-  // ============================================
 
   const playPrevious = useCallback(() => {
     if (playHistory.length < 2) return;
     
     const previousSong = playHistory[1];
-    console.log(`⏮️ [Player] Canción anterior: ${previousSong.titulo}`);
     playSong(previousSong, true);
   }, [playHistory, playSong]);
 
-  // ============================================
   // REPRODUCIR DESDE LA COLA
-  // ============================================
 
   const playFromQueue = useCallback((index) => {
     const song = queue[index];
     if (!song) return;
-    
-    console.log(`🎯 [Player] Seleccionada de cola: ${song.titulo} (posición ${index + 1})`);
-    
+        
     const newQueue = queue.slice(index + 1);
     setQueue(newQueue);
     playSong(song, true);
   }, [queue, playSong]);
 
-  // ============================================
   // AÑADIR A LA COLA
-  // ============================================
 
   const addToQueue = useCallback((song) => {
     if (!song) return;
     
     // Verificar si ya está en la cola
     if (queue.some(s => s.song_id === song.song_id)) {
-      console.log(`⚠️ [Player] ${song.titulo} ya está en la cola`);
+      console.log(`[Player] ${song.titulo} ya está en la cola`);
       return;
     }
     
     // Verificar si es la canción actual
     if (currentSong?.song_id === song.song_id) {
-      console.log(`⚠️ [Player] ${song.titulo} ya se está reproduciendo`);
+      console.log(`[Player] ${song.titulo} ya se está reproduciendo`);
       return;
     }
     
     setQueue(prev => [...prev, song]);
-    console.log(`➕ [Player] Añadida a la cola: ${song.titulo}`);
+    console.log(`[Player] Añadida a la cola: ${song.titulo}`);
   }, [queue, currentSong]);
 
   // ============================================
@@ -497,7 +478,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     audioRef.current.pause();
     setIsPlaying(false);
     reportPlayTime(); // Reportar tiempo al pausar
-    console.log("⏸️ [Player] Pausado");
+    console.log("[Player] Pausado");
   }, [reportPlayTime]);
 
   const togglePlay = useCallback(() => {
@@ -507,7 +488,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
       audioRef.current.play();
       setIsPlaying(true);
       playStartTimeRef.current = Date.now();
-      console.log("▶️ [Player] Reanudado");
+      console.log("[Player] Reanudado");
     }
   }, [isPlaying, currentSong, pause]);
 
@@ -524,24 +505,19 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     setVolume(newVolume);
   }, []);
 
-  // ============================================
   // TOGGLE LIKE
-  // ============================================
 
   const toggleLike = useCallback((song) => {
     if (!song) return;
     swToggleLike(song.song_id, song.artista, song.genero);
-    console.log(`❤️ [Player] Toggle like: ${song.titulo}`);
+    console.log(`[Player] Toggle like: ${song.titulo}`);
   }, []);
 
   const isLiked = useCallback((songId) => {
     return likedSongs.some(s => s.songId === songId);
   }, [likedSongs]);
 
-  // ============================================
   // UTILIDADES
-  // ============================================
-
   const formatTime = (seconds) => {
     if (isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);

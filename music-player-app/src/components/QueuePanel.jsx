@@ -1,6 +1,7 @@
 // Componente de Cola de Reproducción - FOG COMPUTING
+import { FiCloud, FiDownload, FiLock, FiZap } from "react-icons/fi";
 import { getThumbnailUrl } from "../services/awsService";
-import { useMusicContext } from "../App";
+import { useMusicContext } from "../contexts/MusicContext";
 import { useState, useEffect } from "react";
 import { onSWMessage, getCacheStatus } from "../services/swService";
 
@@ -34,8 +35,8 @@ export default function QueuePanel({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // Mostrar máximo 10 canciones
-  const displayQueue = queue.slice(0, 10);
+  // Mostrar todas las canciones
+  const displayQueue = queue.slice();
 
   return (
     <div className="fixed right-0 top-0 bottom-20 w-80 bg-gray-900 border-l border-gray-800 shadow-2xl z-50 flex flex-col">
@@ -52,19 +53,6 @@ export default function QueuePanel({ isOpen, onClose }) {
         </button>
       </div>
 
-      {/* Cache Status */}
-      <div className="px-4 py-2 bg-gray-800/50 border-b border-gray-700">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-gray-400">
-            📦 Cache: {cacheInfo.decryptedCached} listas
-          </span>
-          {prefetchStatus && prefetchStatus.total > 0 && (
-            <span className="text-green-400 animate-pulse">
-              ⬇️ Descargando {prefetchStatus.current}/{prefetchStatus.total}
-            </span>
-          )}
-        </div>
-      </div>
 
       {/* Now Playing */}
       {currentSong && (
@@ -138,7 +126,9 @@ export default function QueuePanel({ isOpen, onClose }) {
                         {song.genero}
                       </span>
                       {isPrefetched && (
-                        <span className="text-[10px] text-green-400">⚡ Lista</span>
+                        <span className="text-[10px] text-green-400 flex items-center gap-1">
+                          <FiZap className="w-3 h-3" /> Lista
+                        </span>
                       )}
                     </div>
                   </li>
@@ -152,13 +142,13 @@ export default function QueuePanel({ isOpen, onClose }) {
       {/* Footer */}
       <div className="p-4 border-t border-gray-800">
         <div className="text-center mb-2">
-          <p className="text-xs text-gray-500">
-            🌫️ Cola generada por Fog Computing
+          <p className="text-xs text-gray-500 flex items-center justify-center gap-1">
+            <FiCloud className="w-3 h-3 gap-x-2 gap-y-1" /> Cola generada por Fog Computing
           </p>
         </div>
         <div className="flex justify-between text-[10px] text-gray-600">
-          <span>📥 Pre-descarga: 3 canciones</span>
-          <span>🔐 Desencriptadas localmente</span>
+          <span className="flex items-center gap-x-2 gap-y-1"><FiDownload className="w-3 h-3" /> Pre-descarga: 3 canciones</span>
+          <span className="flex items-center gap-x-2 gap-y-1"><FiLock className="w-3 h-3" /> Desencriptadas localmente</span>
         </div>
       </div>
     </div>

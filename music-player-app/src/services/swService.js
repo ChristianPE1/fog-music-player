@@ -19,7 +19,7 @@ export async function registerServiceWorker() {
       scope: "/",
     });
 
-    console.log("✅ [SW-Service] Service Worker registrado:", swRegistration.scope);
+    console.log("[SW-Service] Service Worker registrado:", swRegistration.scope);
 
     // Escuchar actualizaciones
     swRegistration.addEventListener("updatefound", () => {
@@ -38,7 +38,7 @@ export async function registerServiceWorker() {
 
     return swRegistration;
   } catch (error) {
-    console.error("❌ [SW-Service] Error al registrar Service Worker:", error);
+    console.error("[SW-Service] Error al registrar Service Worker:", error);
     return null;
   }
 }
@@ -50,7 +50,7 @@ export async function registerServiceWorker() {
 function setupMessageListener() {
   navigator.serviceWorker.addEventListener("message", (event) => {
     const { type, payload } = event.data;
-    console.log(`📩 [SW-Service] Mensaje del SW: ${type}`);
+    console.log(`[SW-Service] Mensaje del SW: ${type}`);
     
     // Llamar handlers registrados
     const handlers = messageHandlers.get(type) || [];
@@ -81,7 +81,7 @@ export function sendMessageToSW(message) {
     navigator.serviceWorker.controller.postMessage(message);
     return true;
   }
-  console.warn("⚠️ [SW-Service] No hay Service Worker controlador");
+  console.warn("[SW-Service] No hay Service Worker controlador");
   return false;
 }
 
@@ -90,7 +90,6 @@ export function sendMessageToSW(message) {
 // ============================================
 
 export function prefetchSongs(songs, count = 3) {
-  console.log(`🔄 [SW-Service] Solicitando pre-descarga de ${count} canciones`);
   
   // Enviar datos completos de las canciones para pre-descarga
   const songsData = songs.slice(0, count).map(song => ({
@@ -111,7 +110,7 @@ export function prefetchSongs(songs, count = 3) {
 // ============================================
 
 export function trackPlayTime(songId, seconds, artist, genre) {
-  console.log(`⏱️ [SW-Service] Reportando tiempo: ${songId} +${seconds}s`);
+  console.log(` [SW-Service] Reportando tiempo: ${songId} +${seconds}s`);
   sendMessageToSW({
     type: "TRACK_PLAY_TIME",
     payload: { songId, seconds, artist, genre },
@@ -125,7 +124,7 @@ export function trackPlayTime(songId, seconds, artist, genre) {
 export function trackSearch(query, artist = null, genre = null) {
   if (!query || query.trim().length < 2) return;
   
-  console.log(`🔍 [SW-Service] Reportando búsqueda: "${query}" -> Artista: ${artist}, Género: ${genre}`);
+  console.log(`[SW-Service] Reportando búsqueda: "${query}" -> Artista: ${artist}, Género: ${genre}`);
   sendMessageToSW({
     type: "TRACK_SEARCH",
     payload: { query: query.trim(), artist, genre },
@@ -137,7 +136,7 @@ export function trackSearch(query, artist = null, genre = null) {
 // ============================================
 
 export function toggleLikeSong(songId, artist, genre) {
-  console.log(`❤️ [SW-Service] Toggle like: ${songId}`);
+  console.log(`[SW-Service] Toggle like: ${songId}`);
   sendMessageToSW({
     type: "TOGGLE_LIKE",
     payload: { songId, artist, genre },
@@ -192,7 +191,7 @@ export function getPreferences() {
 // ============================================
 
 export function requestDynamoSync() {
-  console.log("☁️ [SW-Service] Solicitando sincronización con DynamoDB");
+  console.log("[SW-Service] Solicitando sincronización con DynamoDB");
   sendMessageToSW({ type: "SYNC_TO_DYNAMO" });
 }
 
@@ -201,7 +200,7 @@ export function requestDynamoSync() {
 // ============================================
 
 export function notifyAppClosing() {
-  console.log("🚪 [SW-Service] Notificando cierre de aplicación");
+  console.log("[SW-Service] Notificando cierre de aplicación");
   sendMessageToSW({ type: "APP_CLOSING" });
 }
 

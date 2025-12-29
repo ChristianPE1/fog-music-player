@@ -1,17 +1,15 @@
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { initializeAWS, getAllSongs, getUserFullProfile } from "./services/awsService";
 import { useMusicPlayer } from "./hooks/useMusicPlayer";
 import { registerServiceWorker } from "./services/swService";
+import { MusicContext } from "./contexts/MusicContext";
 import Dashboard from "./pages/Dashboard";
 import Library from "./pages/Library";
+import Profile from "./pages/Profile";
 import PlayerBar from "./components/PlayerBar";
 import QueuePanel from "./components/QueuePanel";
 import NavBar from "./components/NavBar";
-
-// Context para compartir estado del player
-export const MusicContext = createContext(null);
-export const useMusicContext = () => useContext(MusicContext);
 
 function App() {
   const [songs, setSongs] = useState([]);
@@ -106,7 +104,14 @@ function App() {
 
   return (
     <MusicContext.Provider value={{ ...player, songs, userTastes, cloudArtistTastes, refreshTastes }}>
-      <div className="min-h-screen bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col">
+      <div className="min-h-screen text-white flex flex-col relative">
+        {/* Background */}
+        <div className="fixed inset-0 -z-10">
+          <div className="relative h-full w-full bg-slate-950">
+            <div className="absolute bottom-0 left-[-20%] right-0 top-[-10%] h-125 w-125 rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
+            <div className="absolute bottom-0 right-[-20%] top-[-10%] h-125 w-125 rounded-full bg-[radial-gradient(circle_farthest-side,rgba(255,0,182,.15),rgba(255,255,255,0))]"></div>
+          </div>
+        </div>
         {/* Navigation */}
         <NavBar showQueue={showQueue} setShowQueue={setShowQueue} songs={songs} />
 
@@ -115,6 +120,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>
 

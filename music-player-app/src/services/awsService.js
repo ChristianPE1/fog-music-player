@@ -42,8 +42,8 @@ export async function initializeAWS() {
   // Generar o recuperar device ID
   deviceId = getOrCreateDeviceId();
 
-  console.log("✅ AWS inicializado con Cognito Identity Pool");
-  console.log("📱 Device ID:", deviceId);
+  console.log("AWS inicializado con Cognito Identity Pool");
+  console.log("Device ID:", deviceId);
 
   return credentials;
 }
@@ -103,6 +103,27 @@ export async function getUserTastes() {
 
 // Obtener datos completos del usuario (géneros + artistas)
 export async function getUserFullProfile() {
+  // Si hay API Gateway configurada, usar Lambda
+  if (awsConfig.apiGatewayUrl) {
+    try {
+      const response = await fetch(awsConfig.apiGatewayUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'get_profile',
+          device_id: getDeviceId()
+        })
+      });
+      
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.log("API Gateway no disponible, usando DynamoDB directo");
+    }
+  }
+
+  // Fallback a DynamoDB directo (solo lectura permitida)
   if (!docClient) await initializeAWS();
 
   const command = new GetCommand({
@@ -133,6 +154,31 @@ export async function getUserFullProfile() {
 }
 
 export async function updateUserTastes(genero) {
+  // Usar API Gateway si está configurada (mas seguro)
+  if (awsConfig.apiGatewayUrl) {
+    try {
+      const response = await fetch(awsConfig.apiGatewayUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_tastes',
+          device_id: getDeviceId(),
+          genero: genero
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`[AWS] Gustos actualizados via API: ${genero}`);
+        return result.tastes || {};
+      }
+    } catch (error) {
+      console.error("[AWS] Error en API Gateway:", error.message);
+    }
+    return {};
+  }
+
+  // Fallback a DynamoDB directo
   if (!docClient) await initializeAWS();
 
   // Primero obtener gustos actuales
@@ -152,7 +198,7 @@ export async function updateUserTastes(genero) {
   });
 
   await docClient.send(command);
-  console.log(`🎵 [AWS] Gustos actualizados: ${genero} = ${newCount}`);
+  console.log(`[AWS] Gustos actualizados: ${genero} = ${newCount}`);
   
   return currentTastes;
 }
@@ -162,12 +208,45 @@ export async function updateUserTastes(genero) {
 // ============================================
 
 export async function syncPreferencesToDynamo(preferences, topArtists, topGenres) {
-  if (!docClient) await initializeAWS();
+  console.log("[AWS] Sincronizando preferencias FOG...");
+  console.log("   Tiempo total escuchado:", preferences.totalListeningTime, "segundos");
+  console.log("   Top Artistas:", topArtists.length);
+  console.log("   Top Generos:", topGenres.length);
 
-  console.log("☁️ [AWS] Sincronizando preferencias FOG con DynamoDB...");
-  console.log("   📊 Tiempo total escuchado:", preferences.totalListeningTime, "segundos");
-  console.log("   🎤 Top Artistas:", JSON.stringify(topArtists));
-  console.log("   🎵 Top Géneros:", JSON.stringify(topGenres));
+  // Usar API Gateway si está configurada (mas seguro)
+  if (awsConfig.apiGatewayUrl) {
+    try {
+      const response = await fetch(awsConfig.apiGatewayUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'sync_preferences',
+          device_id: getDeviceId(),
+          preferences: {
+            totalListeningTime: preferences.totalListeningTime || 0,
+            playTime: preferences.playTime || {},
+            searchHistory: (preferences.searchHistory || []).slice(-20)
+          },
+          topArtists: topArtists,
+          topGenres: topGenres
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log("[AWS] Preferencias sincronizadas via API Gateway:", result.timestamp);
+        return true;
+      } else {
+        console.error("[AWS] Error en API Gateway:", response.status);
+      }
+    } catch (error) {
+      console.error("[AWS] Error al conectar con API Gateway:", error.message);
+    }
+    return false;
+  }
+
+  // Fallback a DynamoDB directo (requiere permisos de escritura)
+  if (!docClient) await initializeAWS();
 
   // Convertir artistas a objeto para DynamoDB
   const artistTastes = {};
@@ -196,7 +275,7 @@ export async function syncPreferencesToDynamo(preferences, topArtists, topGenres
   });
 
   await docClient.send(command);
-  console.log("✅ [AWS] Preferencias sincronizadas con DynamoDB exitosamente");
+  console.log("[AWS] Preferencias sincronizadas con DynamoDB exitosamente");
   
   return true;
 }
@@ -208,7 +287,7 @@ export async function syncPreferencesToDynamo(preferences, topArtists, topGenres
 export async function downloadSongFromS3(s3Key) {
   if (!s3Client) await initializeAWS();
 
-  console.log("📥 Descargando desde S3 con credenciales Cognito:", s3Key);
+  console.log("Descargando desde S3 con credenciales Cognito:", s3Key);
 
   const command = new GetObjectCommand({
     Bucket: awsConfig.s3Bucket,
@@ -236,7 +315,7 @@ export async function downloadSongFromS3(s3Key) {
     offset += chunk.length;
   }
   
-  console.log("✅ Descarga completada:", s3Key, "Tamaño:", result.length);
+  console.log("Descarga completada:", s3Key, "Tamaño:", result.length);
   return result;
 }
 

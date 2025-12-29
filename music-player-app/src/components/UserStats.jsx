@@ -1,127 +1,115 @@
 // Componente de estadísticas del usuario (Fog Feature)
-import { useState, useEffect } from "react";
-import { getPreferences, onSWMessage } from "../services/swService";
+import { useState, useEffect, useRef } from "react";
+import { FiClock, FiMic, FiMusic, FiSearch, FiCloud, FiActivity } from "react-icons/fi";
+import { getPreferences } from "../services/swService";
 
 export default function UserStats({ tastes }) {
   const [fogStats, setFogStats] = useState(null);
-  const [lastSync, setLastSync] = useState(null);
+  const loadedRef = useRef(false);
 
-  // Cargar estadísticas del Service Worker
+  // Cargar estadísticas del Service Worker (solo una vez)
   useEffect(() => {
+    if (loadedRef.current) return;
     const loadFogStats = async () => {
       const prefs = await getPreferences();
       if (prefs) {
         setFogStats(prefs);
-        console.log("📊 [UserStats] Estadísticas FOG cargadas:", prefs);
       }
+      loadedRef.current = true;
     };
-
     loadFogStats();
   }, []);
 
-  // Escuchar actualizaciones en TIEMPO REAL del SW
-  useEffect(() => {
-    // Handler para actualizaciones en tiempo real
-    const removeUpdateHandler = onSWMessage("PREFERENCES_UPDATED", (payload) => {
-      console.log("🔄 [UserStats] Actualización en tiempo real recibida");
-      setFogStats(payload);
-    });
-
-    // Handler para respuestas a GET_PREFERENCES
-    const removeDataHandler = onSWMessage("PREFERENCES_DATA", (payload) => {
-      setFogStats(payload);
-    });
-
-    return () => {
-      removeUpdateHandler();
-      removeDataHandler();
-    };
-  }, []);
-
-  const entries = Object.entries(tastes);
+  const entries = Object.entries(tastes || {});
   
   // Formatear tiempo
   const formatListeningTime = (seconds) => {
-    if (!seconds) return "0min";
+    if (!seconds) return "0 min";
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     if (hrs > 0) return `${hrs}h ${mins}m`;
-    return `${mins}min`;
+    return `${mins} min`;
   };
 
   return (
     <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
       <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-        <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-        </svg>
+        <FiActivity className="w-5 h-5 text-green-500" />
         Tus gustos musicales (Fog Computing)
       </h3>
 
       {/* Estadísticas principales de FOG */}
-      {fogStats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-          {/* Tiempo total escuchando */}
-          <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 rounded-lg p-3 border border-emerald-500/20">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-emerald-400">⏱️</span>
-              <span className="text-xs text-emerald-300 uppercase">Tiempo escuchando</span>
-            </div>
-            <p className="text-xl font-bold text-white">
-              {formatListeningTime(fogStats.totalListeningTime)}
-            </p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        {/* Tiempo total escuchando */}
+        <div className="bg-linear-to-br from-emerald-500/20 to-emerald-600/10 rounded-lg p-3 border border-emerald-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <FiClock className="w-4 h-4 text-emerald-400" />
+            <span className="text-xs text-emerald-300 uppercase">Tiempo escuchando</span>
           </div>
+          <p className="text-xl font-bold text-white">
+            {formatListeningTime(fogStats?.totalListeningTime)}
+          </p>
+        </div>
 
-          {/* Artista favorito */}
-          {fogStats.topArtists && fogStats.topArtists[0] && (
-            <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/10 rounded-lg p-3 border border-purple-500/20">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-purple-400">🎤</span>
-                <span className="text-xs text-purple-300 uppercase">Artista favorito</span>
-              </div>
+        {/* Artista favorito */}
+        <div className="bg-linear-to-br from-purple-500/20 to-purple-600/10 rounded-lg p-3 border border-purple-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <FiMic className="w-4 h-4 text-purple-400" />
+            <span className="text-xs text-purple-300 uppercase">Artista favorito</span>
+          </div>
+          {fogStats?.topArtists?.[0] ? (
+            <>
               <p className="text-lg font-bold text-white truncate">
                 {fogStats.topArtists[0].artist}
               </p>
               <p className="text-xs text-purple-300">{fogStats.topArtists[0].plays} reproducciones</p>
-            </div>
+            </>
+          ) : (
+            <p className="text-sm text-gray-400">Sin datos aún</p>
           )}
+        </div>
 
-          {/* Género favorito */}
-          {fogStats.topGenres && fogStats.topGenres[0] && (
-            <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-lg p-3 border border-blue-500/20">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-blue-400">🎵</span>
-                <span className="text-xs text-blue-300 uppercase">Género favorito</span>
-              </div>
+        {/* Género favorito */}
+        <div className="bg-linear-to-br from-blue-500/20 to-blue-600/10 rounded-lg p-3 border border-blue-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <FiMusic className="w-4 h-4 text-blue-400" />
+            <span className="text-xs text-blue-300 uppercase">Género favorito</span>
+          </div>
+          {fogStats?.topGenres?.[0] ? (
+            <>
               <p className="text-lg font-bold text-white truncate">
                 {fogStats.topGenres[0].genre}
               </p>
               <p className="text-xs text-blue-300">{fogStats.topGenres[0].plays} reproducciones</p>
-            </div>
+            </>
+          ) : (
+            <p className="text-sm text-gray-400">Sin datos aún</p>
           )}
-
-          {/* Búsquedas */}
-          <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 rounded-lg p-3 border border-orange-500/20">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-orange-400">🔍</span>
-              <span className="text-xs text-orange-300 uppercase">Búsquedas</span>
-            </div>
-            <p className="text-xl font-bold text-white">
-              {fogStats.searchHistory?.length || 0}
-            </p>
-            {fogStats.searchHistory && fogStats.searchHistory[0] && (
-              <p className="text-xs text-orange-300 truncate">
-                Última: "{fogStats.searchHistory[fogStats.searchHistory.length - 1]?.query}"
-              </p>
-            )}
-          </div>
         </div>
-      )}
+
+        {/* Búsquedas */}
+        <div className="bg-linear-to-br from-orange-500/20 to-orange-600/10 rounded-lg p-3 border border-orange-500/20">
+          <div className="flex items-center gap-2 mb-1">
+            <FiSearch className="w-4 h-4 text-orange-400" />
+            <span className="text-xs text-orange-300 uppercase">Búsquedas</span>
+          </div>
+          <p className="text-xl font-bold text-white">
+            {fogStats?.searchHistory?.length || 0}
+          </p>
+          {fogStats?.searchHistory?.[0] && (
+            <p className="text-xs text-orange-300 truncate">
+              Última: "{fogStats.searchHistory[fogStats.searchHistory.length - 1]?.query}"
+            </p>
+          )}
+        </div>
+      </div>
 
       {/* Top Artistas */}
       {fogStats?.topArtists && fogStats.topArtists.length > 1 && (
         <div className="mb-4">
-          <h4 className="text-sm text-gray-400 mb-2">🎤 Top Artistas</h4>
+          <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+            <FiMic className="w-4 h-4" /> Top Artistas
+          </h4>
           <div className="flex flex-wrap gap-2">
             {fogStats.topArtists.slice(0, 5).map(({ artist, plays }, index) => (
               <span 
@@ -140,9 +128,11 @@ export default function UserStats({ tastes }) {
       )}
 
       {/* Géneros por reproducciones */}
-      {entries.length > 0 && (
+      {entries.length > 0 ? (
         <>
-          <h4 className="text-sm text-gray-400 mb-2">🎵 Géneros escuchados</h4>
+          <h4 className="text-sm text-gray-400 mb-2 flex items-center gap-2">
+            <FiMusic className="w-4 h-4" /> Géneros escuchados
+          </h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {entries
               .sort((a, b) => b[1] - a[1])
@@ -167,14 +157,19 @@ export default function UserStats({ tastes }) {
               })}
           </div>
         </>
+      ) : (
+        <div className="text-center py-4 text-gray-500">
+          <p>Aún no hay datos de géneros</p>
+          <p className="text-sm">Escucha algunas canciones para empezar</p>
+        </div>
       )}
       
       <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-700">
-        <p className="text-xs text-gray-500">
-          🌫️ Datos procesados localmente (Fog Computing)
+        <p className="text-xs text-gray-500 flex items-center gap-1">
+          <FiCloud className="w-3 h-3" /> Datos procesados localmente (Fog Computing)
         </p>
-        <p className="text-xs text-gray-500">
-          ☁️ Sync cada 20 min
+        <p className="text-xs text-gray-500 flex items-center gap-1">
+          <FiCloud className="w-3 h-3" /> Sync cada 3 min
         </p>
       </div>
     </div>
