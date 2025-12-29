@@ -1,12 +1,3 @@
-"""
-Fog Music Player - Script de Carga y Encriptado (seed.py)
-Este script:
-1. Lee los MP3s de la carpeta audios/
-2. Encripta cada archivo con AES-256
-3. Sube el archivo .enc a S3 (songs/)
-4. Sube la miniatura .jpg a S3 (thumbnails/)
-5. Registra la metadata en DynamoDB
-"""
 
 import os
 import json
@@ -17,13 +8,7 @@ from pathlib import Path
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 
-# ============================================
-# Configuración
-# ============================================
-
-# Clave AES-256 hardcodeada (32 bytes) - SOLO PARA DESARROLLO
-# En producción, usar AWS KMS o Secrets Manager
-AES_KEY = b"miclavesecretade32bytes123456789"  # Exactamente 32 bytes
+AES_KEY = b"miclavesecretade32bytes123456789"  # 32 bytes
 
 # Configuración AWS
 AWS_PROFILE = "fog-music"
@@ -37,15 +22,10 @@ AUDIOS_DIR = BASE_DIR / "audios"
 THUMBNAILS_DIR = BASE_DIR / "miniaturas"
 METADATA_FILE = BASE_DIR / "metadata.json"
 
-# ============================================
-# Funciones de Encriptación
-# ============================================
+
 
 def encrypt_file(file_path: Path, key: bytes) -> tuple[bytes, bytes]:
-    """
-    Encripta un archivo usando AES-256-CBC.
-    Retorna (iv, encrypted_data)
-    """
+    # Retorna (iv, encrypted_data)
     # Generar IV aleatorio (16 bytes)
     iv = os.urandom(16)
     
@@ -71,12 +51,10 @@ def generate_song_id(filename: str) -> str:
     return hashlib.md5(filename.encode()).hexdigest()[:12]
 
 
-# ============================================
 # Funciones AWS
-# ============================================
 
 def get_aws_clients():
-    """Inicializa clientes de AWS."""
+    # Inicializa clientes de AWS.
     session = boto3.Session(profile_name=AWS_PROFILE, region_name=AWS_REGION)
     s3 = session.client("s3")
     dynamodb = session.resource("dynamodb")
@@ -84,7 +62,7 @@ def get_aws_clients():
 
 
 def upload_encrypted_song(s3_client, song_id: str, iv: bytes, encrypted_data: bytes):
-    """Sube canción encriptada a S3. El IV se guarda al inicio del archivo."""
+    # Subir canción encriptada a S3. El IV se guarda al inicio del archivo.
     # Concatenar IV + datos encriptados
     full_data = iv + encrypted_data
     
@@ -95,14 +73,14 @@ def upload_encrypted_song(s3_client, song_id: str, iv: bytes, encrypted_data: by
         Body=full_data,
         ContentType="application/octet-stream"
     )
-    print(f"  ✅ Subido: {key}")
+    print(f"Subido: {key}")
     return key
 
 
 def upload_thumbnail(s3_client, song_id: str, thumbnail_path: Path):
-    """Sube miniatura a S3."""
+    # Subir miniatura a S3.
     if not thumbnail_path.exists():
-        print(f"  ⚠️  No se encontró miniatura: {thumbnail_path.name}")
+        print(f"No se encontró miniatura: {thumbnail_path.name}")
         return None
     
     key = f"thumbnails/{song_id}.jpg"
@@ -113,12 +91,12 @@ def upload_thumbnail(s3_client, song_id: str, thumbnail_path: Path):
             Body=f.read(),
             ContentType="image/jpeg"
         )
-    print(f"  ✅ Subido: {key}")
+    print(f"Subido: {key}")
     return key
 
 
 def register_song_metadata(dynamodb, song_id: str, metadata: dict, s3_song_key: str, s3_thumbnail_key: str):
-    """Registra metadata de canción en DynamoDB."""
+    # Registra metadata de canción en DynamoDB.
     table = dynamodb.Table(DYNAMODB_TABLE)
     
     item = {
@@ -133,15 +111,13 @@ def register_song_metadata(dynamodb, song_id: str, metadata: dict, s3_song_key: 
     }
     
     table.put_item(Item=item)
-    print(f"  ✅ Registrado en DynamoDB: {song_id}")
+    print(f"Registrado en DynamoDB: {song_id}")
 
 
-# ============================================
 # Procesamiento Principal
-# ============================================
 
 def find_matching_audio(titulo: str, artista: str) -> Path | None:
-    """Busca el archivo de audio que coincida con el título y artista."""
+    # Busca el archivo de audio que coincida con el título y artista.
     # Buscar en todos los archivos MP3
     for audio_file in AUDIOS_DIR.glob("*.mp3"):
         filename = audio_file.name
@@ -160,7 +136,7 @@ def find_matching_audio(titulo: str, artista: str) -> Path | None:
 
 
 def find_matching_thumbnail(audio_filename: str) -> Path | None:
-    """Busca la miniatura correspondiente al audio."""
+    # Busca la miniatura correspondiente al audio.
     # El thumbnail tiene el mismo nombre pero con extensión .jpg
     base_name = Path(audio_filename).stem
     thumbnail_path = THUMBNAILS_DIR / f"{base_name}.jpg"
@@ -172,30 +148,26 @@ def find_matching_thumbnail(audio_filename: str) -> Path | None:
 
 
 def main():
-    print("=" * 60)
-    print("🎵 Fog Music Player - Script de Carga")
-    print("=" * 60)
     
     # Verificar que existan los directorios
     if not AUDIOS_DIR.exists():
-        print(f"❌ Error: No existe el directorio {AUDIOS_DIR}")
+        print(f"Error: No existe el directorio {AUDIOS_DIR}")
         return
     
     if not METADATA_FILE.exists():
-        print(f"❌ Error: No existe el archivo {METADATA_FILE}")
+        print(f"Error: No existe el archivo {METADATA_FILE}")
         return
     
     # Cargar metadata
     with open(METADATA_FILE, "r", encoding="utf-8") as f:
         songs_metadata = json.load(f)
     
-    print(f"📋 Cargadas {len(songs_metadata)} canciones del metadata.json")
+    print(f"Cargadas {len(songs_metadata)} canciones del metadata.json")
     
     # Inicializar AWS
-    print("\n🔧 Conectando a AWS...")
     s3_client, dynamodb = get_aws_clients()
-    print("✅ Conexión establecida\n")
-    
+    print("Conexión establecida\n")
+
     # Procesar cada canción
     processed = 0
     errors = 0
@@ -211,7 +183,7 @@ def main():
         audio_path = find_matching_audio(titulo, artista)
         
         if not audio_path:
-            print(f"  ⚠️  No se encontró archivo de audio para: {titulo}")
+            print(f"[Error]  No se encontró archivo de audio para: {titulo}")
             errors += 1
             continue
         
@@ -219,7 +191,7 @@ def main():
         song_id = generate_song_id(audio_path.name)
         
         # Encriptar audio
-        print(f"  🔐 Encriptando...")
+        print("Encriptando...")
         iv, encrypted_data = encrypt_file(audio_path, AES_KEY)
         
         # Subir a S3
@@ -237,14 +209,11 @@ def main():
         processed += 1
     
     # Resumen
-    print("\n" + "=" * 60)
-    print("📊 RESUMEN")
-    print("=" * 60)
-    print(f"✅ Procesadas correctamente: {processed}")
-    print(f"⚠️  Errores: {errors}")
-    print(f"📦 Bucket S3: {S3_BUCKET}")
-    print(f"📋 Tabla DynamoDB: {DYNAMODB_TABLE}")
-    print("=" * 60)
+    print("\nRESUMEN")
+    print(f"Procesadas correctamente: {processed}")
+    print(f"Errores: {errors}")
+    print(f"Bucket S3: {S3_BUCKET}")
+    print(f"Tabla DynamoDB: {DYNAMODB_TABLE}")
 
 
 if __name__ == "__main__":
