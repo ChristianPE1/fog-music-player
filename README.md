@@ -2,6 +2,10 @@
 
 Sistema de reproduccion de musica con arquitectura Fog Computing para procesamiento local de preferencias de usuario.
 
+## Despliegue
+
+https://main.d2h8l8wagj7owc.amplifyapp.com/library
+
 ## Miembros del Equipo
 - Christian Pardavé Espinoza
 - Saul Condori Machaca
