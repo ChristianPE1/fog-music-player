@@ -70,54 +70,63 @@ export function calculateGenreScores(tastes, allGenres) {
 }
 
 // ============================================
-// Algoritmo de Recomendación
+// Algoritmo de Recomendación (Género + Artista)
 // ============================================
 
-export function getRecommendedSongs(songs, tastes, count = 10) {
+export function getRecommendedSongs(songs, tastes, count = 10, artistTastes = {}) {
   if (songs.length === 0) return [];
 
   const allGenres = [...new Set(songs.map(s => s.genero))];
-  const scores = calculateGenreScores(tastes, allGenres);
+  const genreScores = calculateGenreScores(tastes, allGenres);
   
-  // Ordenar géneros por puntuación (de mayor a menor)
-  const sortedGenres = Object.entries(scores)
-    .sort((a, b) => b[1] - a[1])
-    .map(([genre]) => genre);
+  // Calcular puntuaciones de artistas
+  const totalArtistPlays = Object.values(artistTastes).reduce((a, b) => a + b, 0);
+  const artistScores = {};
+  if (totalArtistPlays > 0) {
+    Object.entries(artistTastes).forEach(([artist, plays]) => {
+      artistScores[artist] = (plays / totalArtistPlays) * 100;
+    });
+  }
+  
+  // Calcular puntuación combinada para cada canción
+  const scoredSongs = songs.map(song => {
+    const genreScore = genreScores[song.genero] || 0;
+    const artistScore = artistScores[song.artista] || 0;
+    // Peso: 60% género, 40% artista
+    const combinedScore = (genreScore * 0.6) + (artistScore * 0.4);
+    // Añadir algo de aleatoriedad para variedad
+    const randomFactor = Math.random() * 10;
+    return {
+      ...song,
+      score: combinedScore + randomFactor
+    };
+  });
 
+  // Ordenar por puntuación combinada
+  scoredSongs.sort((a, b) => b.score - a.score);
+
+  // Seleccionar las mejores canciones, evitando demasiadas del mismo artista
   const recommendations = [];
-  const usedSongIds = new Set();
+  const artistCount = {};
+  const maxPerArtist = 3;
 
-  // Iterar por géneros priorizando los favoritos
-  for (const genre of sortedGenres) {
+  for (const song of scoredSongs) {
     if (recommendations.length >= count) break;
-
-    // Obtener canciones de este género que no han sido agregadas
-    const genreSongs = songs
-      .filter(s => s.genero === genre && !usedSongIds.has(s.song_id))
-      .sort(() => Math.random() - 0.5); // Shuffle aleatorio
-
-    // Calcular cuántas canciones de este género incluir
-    // Proporcional a la puntuación, pero al menos 1 si hay espacio
-    const genreScore = scores[genre];
-    let toInclude = Math.max(1, Math.round((genreScore / 100) * count));
-    toInclude = Math.min(toInclude, genreSongs.length, count - recommendations.length);
-
-    for (let i = 0; i < toInclude && recommendations.length < count; i++) {
-      recommendations.push(genreSongs[i]);
-      usedSongIds.add(genreSongs[i].song_id);
+    
+    const currentArtistCount = artistCount[song.artista] || 0;
+    if (currentArtistCount < maxPerArtist) {
+      recommendations.push(song);
+      artistCount[song.artista] = currentArtistCount + 1;
     }
   }
 
-  // Si aún faltan canciones, completar con cualquier canción restante
+  // Si no llenamos las recomendaciones, agregar más canciones
   if (recommendations.length < count) {
-    const remaining = songs
-      .filter(s => !usedSongIds.has(s.song_id))
-      .sort(() => Math.random() - 0.5);
-
-    for (const song of remaining) {
+    for (const song of scoredSongs) {
       if (recommendations.length >= count) break;
-      recommendations.push(song);
-      usedSongIds.add(song.song_id);
+      if (!recommendations.some(r => r.song_id === song.song_id)) {
+        recommendations.push(song);
+      }
     }
   }
 
@@ -128,12 +137,12 @@ export function getRecommendedSongs(songs, tastes, count = 10) {
 // Cola de Reproducción Automática
 // ============================================
 
-export function generateAutoQueue(songs, tastes, currentSong, queueSize = 10) {
+export function generateAutoQueue(songs, tastes, currentSong, queueSize = 10, artistTastes = {}) {
   // Filtrar la canción actual
   const availableSongs = songs.filter(s => s.song_id !== currentSong?.song_id);
   
-  // Usar el algoritmo de recomendación para la cola
-  const queue = getRecommendedSongs(availableSongs, tastes, queueSize);
+  // Usar el algoritmo de recomendación mejorado para la cola
+  const queue = getRecommendedSongs(availableSongs, tastes, queueSize, artistTastes);
   
   return queue;
 }

@@ -3,7 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { fetchAndDecryptSong, revokeAudioUrl } from "../services/cryptoService";
 import { getSongKey, updateUserTastes, syncPreferencesToDynamo } from "../services/awsService";
 import { generateAutoQueue, addToPlayHistory } from "../services/recommendationService";
-import { prefetchSongs, trackPlayTime, onSWMessage, requestDynamoSync, notifyAppClosing } from "../services/swService";
+import { prefetchSongs, trackPlayTime, onSWMessage, requestDynamoSync, notifyAppClosing, toggleLikeSong as swToggleLike, getLikedSongs } from "../services/swService";
 
 // Constantes
 const QUEUE_SIZE = 10;
@@ -24,6 +24,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
   const [queue, setQueue] = useState([]);
   const [playHistory, setPlayHistory] = useState([]);
   const [prefetchStatus, setPrefetchStatus] = useState({ current: 0, total: 0 });
+  const [likedSongs, setLikedSongs] = useState([]);
 
   // Refs para tracking de tiempo
   const playStartTimeRef = useRef(null);
@@ -32,6 +33,48 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
 
   // Cache de URLs desencriptadas para las próximas canciones
   const prefetchCache = useRef(new Map());
+
+  // Estado para artistTastes del Fog
+  const [artistTastes, setArtistTastes] = useState({});
+
+  // Cargar artistTastes y escuchar actualizaciones
+  useEffect(() => {
+    const loadArtistTastes = async () => {
+      const likes = await getLikedSongs();
+      setLikedSongs(likes);
+      console.log(`❤️ [Player] Cargados ${likes.length} likes`);
+    };
+    loadArtistTastes();
+    
+    // Escuchar actualizaciones de preferencias
+    const removePrefsHandler = onSWMessage("PREFERENCES_UPDATED", (payload) => {
+      if (payload.preferences?.artistPlays) {
+        setArtistTastes(payload.preferences.artistPlays);
+      }
+      if (payload.likedSongs) {
+        setLikedSongs(payload.likedSongs);
+      }
+    });
+
+    return () => {
+      removePrefsHandler();
+    };
+  }, []);
+
+  // Escuchar cambios de likes
+  useEffect(() => {
+    const removeLikeHandler = onSWMessage("LIKE_TOGGLED", (payload) => {
+      if (payload.isLiked) {
+        setLikedSongs(prev => [...prev, { songId: payload.songId }]);
+      } else {
+        setLikedSongs(prev => prev.filter(s => s.songId !== payload.songId));
+      }
+    });
+
+    return () => {
+      removeLikeHandler();
+    };
+  }, []);
 
   // ============================================
   // TRACKING DE TIEMPO DE REPRODUCCIÓN
@@ -227,7 +270,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
   const generateQueue = useCallback((currentSong) => {
     if (!songs || songs.length === 0) return;
     
-    const newQueue = generateAutoQueue(songs, userTastes, currentSong, QUEUE_SIZE);
+    const newQueue = generateAutoQueue(songs, userTastes, currentSong, QUEUE_SIZE, artistTastes);
     setQueue(newQueue);
     console.log(`🎵 [Player] Cola generada: ${newQueue.length} canciones (mostrando ${QUEUE_SIZE})`);
     
@@ -235,7 +278,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     newQueue.forEach((song, i) => {
       console.log(`   ${i + 1}. ${song.titulo} - ${song.artista} (${song.genero})`);
     });
-  }, [songs, userTastes]);
+  }, [songs, userTastes, artistTastes]);
 
   // Reproducir siguiente (declarado antes de usarse en useEffect)
   const playNextRef = useRef(null);
@@ -424,6 +467,29 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
   }, [queue, playSong]);
 
   // ============================================
+  // AÑADIR A LA COLA
+  // ============================================
+
+  const addToQueue = useCallback((song) => {
+    if (!song) return;
+    
+    // Verificar si ya está en la cola
+    if (queue.some(s => s.song_id === song.song_id)) {
+      console.log(`⚠️ [Player] ${song.titulo} ya está en la cola`);
+      return;
+    }
+    
+    // Verificar si es la canción actual
+    if (currentSong?.song_id === song.song_id) {
+      console.log(`⚠️ [Player] ${song.titulo} ya se está reproduciendo`);
+      return;
+    }
+    
+    setQueue(prev => [...prev, song]);
+    console.log(`➕ [Player] Añadida a la cola: ${song.titulo}`);
+  }, [queue, currentSong]);
+
+  // ============================================
   // CONTROLES DE REPRODUCCIÓN
   // ============================================
 
@@ -459,6 +525,20 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
   }, []);
 
   // ============================================
+  // TOGGLE LIKE
+  // ============================================
+
+  const toggleLike = useCallback((song) => {
+    if (!song) return;
+    swToggleLike(song.song_id, song.artista, song.genero);
+    console.log(`❤️ [Player] Toggle like: ${song.titulo}`);
+  }, []);
+
+  const isLiked = useCallback((songId) => {
+    return likedSongs.some(s => s.songId === songId);
+  }, [likedSongs]);
+
+  // ============================================
   // UTILIDADES
   // ============================================
 
@@ -481,14 +561,18 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     queue,
     playHistory,
     prefetchStatus,
+    likedSongs,
     playSong,
     pause,
     togglePlay,
     playNext,
     playPrevious,
     playFromQueue,
+    addToQueue,
     seek,
     changeVolume,
+    toggleLike,
+    isLiked,
     formatTime,
     // Nuevas funciones expuestas
     queueSize: QUEUE_SIZE,

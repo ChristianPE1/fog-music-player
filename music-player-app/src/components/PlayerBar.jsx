@@ -18,12 +18,16 @@ export default function PlayerBar({ onQueueClick }) {
     changeVolume,
     playNext,
     playPrevious,
+    toggleLike,
+    isLiked,
     formatTime,
   } = useMusicContext();
 
   const [showVolume, setShowVolume] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [prevVolume, setPrevVolume] = useState(volume);
+
+  const currentIsLiked = currentSong ? isLiked(currentSong.song_id) : false;
 
   const handleMuteToggle = () => {
     if (isMuted) {
@@ -101,8 +105,15 @@ export default function PlayerBar({ onQueueClick }) {
             </p>
           </div>
           {/* Like button */}
-          <button className="p-2 text-gray-400 hover:text-green-500 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button 
+            onClick={() => toggleLike(currentSong)}
+            className={`p-2 transition-colors ${
+              currentIsLiked 
+                ? "text-green-500 hover:text-green-400" 
+                : "text-gray-400 hover:text-green-500"
+            }`}
+          >
+            <svg className="w-5 h-5" fill={currentIsLiked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

@@ -17,20 +17,25 @@ export default function UserStats({ tastes }) {
     };
 
     loadFogStats();
-
-    // Actualizar cada 30 segundos
-    const interval = setInterval(loadFogStats, 30000);
-
-    return () => clearInterval(interval);
   }, []);
 
-  // Escuchar actualizaciones del SW
+  // Escuchar actualizaciones en TIEMPO REAL del SW
   useEffect(() => {
-    const removeHandler = onSWMessage("PREFERENCES_DATA", (payload) => {
+    // Handler para actualizaciones en tiempo real
+    const removeUpdateHandler = onSWMessage("PREFERENCES_UPDATED", (payload) => {
+      console.log("🔄 [UserStats] Actualización en tiempo real recibida");
       setFogStats(payload);
     });
 
-    return () => removeHandler();
+    // Handler para respuestas a GET_PREFERENCES
+    const removeDataHandler = onSWMessage("PREFERENCES_DATA", (payload) => {
+      setFogStats(payload);
+    });
+
+    return () => {
+      removeUpdateHandler();
+      removeDataHandler();
+    };
   }, []);
 
   const entries = Object.entries(tastes);

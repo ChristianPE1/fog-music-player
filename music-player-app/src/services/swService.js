@@ -119,16 +119,49 @@ export function trackPlayTime(songId, seconds, artist, genre) {
 }
 
 // ============================================
-// Tracking de búsquedas
+// Tracking de búsquedas (con artista y género)
 // ============================================
 
-export function trackSearch(query) {
+export function trackSearch(query, artist = null, genre = null) {
   if (!query || query.trim().length < 2) return;
   
-  console.log(`🔍 [SW-Service] Reportando búsqueda: "${query}"`);
+  console.log(`🔍 [SW-Service] Reportando búsqueda: "${query}" -> Artista: ${artist}, Género: ${genre}`);
   sendMessageToSW({
     type: "TRACK_SEARCH",
-    payload: { query: query.trim() },
+    payload: { query: query.trim(), artist, genre },
+  });
+}
+
+// ============================================
+// Toggle Like de canción
+// ============================================
+
+export function toggleLikeSong(songId, artist, genre) {
+  console.log(`❤️ [SW-Service] Toggle like: ${songId}`);
+  sendMessageToSW({
+    type: "TOGGLE_LIKE",
+    payload: { songId, artist, genre },
+  });
+}
+
+// ============================================
+// Obtener canciones likeadas
+// ============================================
+
+export function getLikedSongs() {
+  return new Promise((resolve) => {
+    const handler = (payload) => {
+      resolve(payload.likedSongs || []);
+    };
+    
+    const removeHandler = onSWMessage("LIKED_SONGS", handler);
+    
+    sendMessageToSW({ type: "GET_LIKED_SONGS" });
+    
+    setTimeout(() => {
+      removeHandler();
+      resolve([]);
+    }, 3000);
   });
 }
 

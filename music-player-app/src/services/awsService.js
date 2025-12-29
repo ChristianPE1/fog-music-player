@@ -101,6 +101,37 @@ export async function getUserTastes() {
   }
 }
 
+// Obtener datos completos del usuario (géneros + artistas)
+export async function getUserFullProfile() {
+  if (!docClient) await initializeAWS();
+
+  const command = new GetCommand({
+    TableName: awsConfig.usersTable,
+    Key: { device_id: getDeviceId() },
+  });
+
+  try {
+    const response = await docClient.send(command);
+    const item = response.Item || {};
+    return {
+      genreTastes: item.tastes || {},
+      artistTastes: item.artist_tastes || {},
+      totalListeningTime: item.total_listening_time || 0,
+      searchHistory: item.search_history || [],
+      lastSync: item.last_sync || null
+    };
+  } catch (error) {
+    console.log("No hay datos previos del usuario");
+    return {
+      genreTastes: {},
+      artistTastes: {},
+      totalListeningTime: 0,
+      searchHistory: [],
+      lastSync: null
+    };
+  }
+}
+
 export async function updateUserTastes(genero) {
   if (!docClient) await initializeAWS();
 

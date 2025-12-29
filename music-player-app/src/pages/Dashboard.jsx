@@ -1,33 +1,68 @@
 // Página Dashboard - Muestra recomendaciones personalizadas
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import SongCard from "../components/SongCard";
 import UserStats from "../components/UserStats";
 import { getRecommendedSongs, calculateGenreScores, getTopGenres } from "../services/recommendationService";
 import { useMusicContext } from "../App";
+import { getPreferences, onSWMessage } from "../services/swService";
 
 export default function Dashboard() {
-  const { songs, userTastes, currentSong, isPlaying, isLoading, playSong } = useMusicContext();
-  // Calcular recomendaciones
+  const { songs, userTastes, cloudArtistTastes, currentSong, isPlaying, isLoading, playSong, addToQueue } = useMusicContext();
+  const [fogArtistTastes, setFogArtistTastes] = useState({});
+  const [fogGenreTastes, setFogGenreTastes] = useState({});
+
+  // Cargar preferencias del SW (Fog) incluyendo artistas
+  useEffect(() => {
+    const loadFogPrefs = async () => {
+      const prefs = await getPreferences();
+      if (prefs?.preferences) {
+        setFogArtistTastes(prefs.preferences.artistPlays || {});
+        setFogGenreTastes(prefs.preferences.genrePlays || {});
+        console.log("🌫️ [Dashboard] Preferencias FOG cargadas:");
+        console.log("   🎤 Artistas:", Object.keys(prefs.preferences.artistPlays || {}).length);
+        console.log("   🎵 Géneros:", Object.keys(prefs.preferences.genrePlays || {}).length);
+      }
+    };
+    loadFogPrefs();
+  }, []);
+
+  // Escuchar actualizaciones en tiempo real
+  useEffect(() => {
+    const removeHandler = onSWMessage("PREFERENCES_UPDATED", (payload) => {
+      if (payload.preferences) {
+        setFogArtistTastes(payload.preferences.artistPlays || {});
+        setFogGenreTastes(payload.preferences.genrePlays || {});
+        console.log("🔄 [Dashboard] Actualización en tiempo real recibida");
+      }
+    });
+    return () => removeHandler();
+  }, []);
+
+  // Usar preferencias de FOG (tiempo real) o de DynamoDB (Cloud) como fallback
+  const effectiveGenreTastes = Object.keys(fogGenreTastes).length > 0 ? fogGenreTastes : userTastes;
+  const effectiveArtistTastes = Object.keys(fogArtistTastes).length > 0 ? fogArtistTastes : (cloudArtistTastes || {});
+
+  // Calcular recomendaciones usando género Y artista
   const recommendations = useMemo(() => {
-    return getRecommendedSongs(songs, userTastes, 10);
-  }, [songs, userTastes]);
+    return getRecommendedSongs(songs, effectiveGenreTastes, 10, effectiveArtistTastes);
+  }, [songs, effectiveGenreTastes, effectiveArtistTastes]);
 
   // Obtener géneros favoritos
   const topGenres = useMemo(() => {
-    return getTopGenres(userTastes, 3);
-  }, [userTastes]);
+    return getTopGenres(effectiveGenreTastes, 3);
+  }, [effectiveGenreTastes]);
 
   // Calcular puntuaciones de géneros
   const allGenres = useMemo(() => [...new Set(songs.map(s => s.genero))], [songs]);
   const genreScores = useMemo(() => {
-    return calculateGenreScores(userTastes, allGenres);
-  }, [userTastes, allGenres]);
+    return calculateGenreScores(effectiveGenreTastes, allGenres);
+  }, [effectiveGenreTastes, allGenres]);
 
-  const totalPlays = Object.values(userTastes).reduce((a, b) => a + b, 0);
+  const totalPlays = Object.values(effectiveGenreTastes).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-7xl mx-auto my-10 px-4">
       {/* Header del Dashboard */}
       <div className="flex items-center justify-between">
         <div>
@@ -85,6 +120,7 @@ export default function Dashboard() {
                 isPlaying={isPlaying && currentSong?.song_id === song.song_id}
                 isLoading={isLoading && currentSong?.song_id === song.song_id}
                 onPlay={playSong}
+                onAddToQueue={addToQueue}
               />
             ))}
           </div>

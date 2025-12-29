@@ -1,8 +1,15 @@
 // Componente de tarjeta de canción
 import { getThumbnailUrl } from "../services/awsService";
 
-export default function SongCard({ song, isPlaying, isCurrentSong, isLoading, onPlay }) {
+export default function SongCard({ song, isPlaying, isCurrentSong, isLoading, onPlay, onAddToQueue, showAddToQueue = true }) {
   const thumbnailUrl = getThumbnailUrl(song);
+
+  const handleAddToQueue = (e) => {
+    e.stopPropagation();
+    if (onAddToQueue) {
+      onAddToQueue(song);
+    }
+  };
 
   return (
     <div
@@ -27,7 +34,7 @@ export default function SongCard({ song, isPlaying, isCurrentSong, isLoading, on
         {/* Overlay de reproducción */}
         <div
           className={`
-            absolute inset-0 flex items-center justify-center
+            absolute inset-0 flex items-center justify-center gap-2
             bg-black/40 transition-opacity duration-200
             ${isCurrentSong && isPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
           `}
@@ -35,20 +42,37 @@ export default function SongCard({ song, isPlaying, isCurrentSong, isLoading, on
           {isLoading && isCurrentSong ? (
             <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <button
-              className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center
-                         hover:scale-110 transition-transform shadow-lg"
-            >
-              {isCurrentSong && isPlaying ? (
-                <svg className="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                </svg>
-              ) : (
-                <svg className="w-6 h-6 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
+            <>
+              {/* Botón Play */}
+              <button
+                className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center
+                           hover:scale-110 transition-transform shadow-lg"
+              >
+                {isCurrentSong && isPlaying ? (
+                  <svg className="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+              
+              {/* Botón Añadir a cola */}
+              {showAddToQueue && onAddToQueue && !isCurrentSong && (
+                <button
+                  onClick={handleAddToQueue}
+                  className="w-10 h-10 bg-gray-700/80 hover:bg-gray-600 rounded-full flex items-center justify-center
+                             hover:scale-110 transition-transform shadow-lg"
+                  title="Añadir a la cola"
+                >
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" />
+                  </svg>
+                </button>
               )}
-            </button>
+            </>
           )}
         </div>
       </div>

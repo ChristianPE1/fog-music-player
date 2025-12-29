@@ -15,8 +15,11 @@ let userPreferences = {
   searchHistory: [],
   artistPlays: {},
   genrePlays: {},
+  likedSongs: [],
   lastSync: null,
   totalListeningTime: 0,
+  // Set para trackear canciones ya contadas en esta sesión
+  countedSongs: new Set(),
 };
 
 // IndexedDB para persistir preferencias
@@ -43,8 +46,18 @@ async function loadPreferences() {
     return new Promise((resolve) => {
       request.onsuccess = () => {
         if (request.result) {
-          userPreferences = { ...userPreferences, ...request.result.data };
+          const loadedData = request.result.data;
+          userPreferences = { ...userPreferences, ...loadedData };
+          // Convertir Array a Set para countedSongs
+          if (Array.isArray(userPreferences.countedSongs)) {
+            userPreferences.countedSongs = new Set(userPreferences.countedSongs);
+          } else if (!userPreferences.countedSongs) {
+            userPreferences.countedSongs = new Set();
+          }
           console.log("📚 [SW-FOG] Preferencias cargadas");
+          console.log("   🎤 Artistas:", Object.keys(userPreferences.artistPlays || {}).length);
+          console.log("   🎵 Géneros:", Object.keys(userPreferences.genrePlays || {}).length);
+          console.log("   ❤️ Likes:", (userPreferences.likedSongs || []).length);
         }
         resolve(userPreferences);
       };
@@ -59,37 +72,107 @@ async function loadPreferences() {
 async function savePreferences() {
   try {
     const db = await openPreferencesDB();
-    const tx = db.transaction("preferences", "readwrite");
-    const store = tx.objectStore("preferences");
-    await store.put({ id: "user_preferences", data: userPreferences });
-    console.log("💾 [SW-FOG] Preferencias guardadas");
-    console.log("   📊 Tiempo escuchado:", formatTime(userPreferences.totalListeningTime));
-    console.log("   🎤 Top Artistas:", JSON.stringify(getTopArtists(3)));
-    console.log("   🎵 Top Géneros:", JSON.stringify(getTopGenres(3)));
+    
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("preferences", "readwrite");
+      const store = tx.objectStore("preferences");
+      
+      // Convertir Set a Array para guardar en IndexedDB
+      const dataToSave = {
+        ...userPreferences,
+        countedSongs: userPreferences.countedSongs instanceof Set 
+          ? Array.from(userPreferences.countedSongs) 
+          : (userPreferences.countedSongs || [])
+      };
+      
+      const request = store.put({ id: "user_preferences", data: dataToSave });
+      
+      request.onsuccess = () => {
+        console.log("💾 [SW-FOG] Preferencias guardadas correctamente");
+        console.log("   🎤 Artistas:", Object.keys(dataToSave.artistPlays || {}).length);
+        console.log("   🎵 Géneros:", Object.keys(dataToSave.genrePlays || {}).length);
+        console.log("   ⏱️ Tiempo total:", dataToSave.totalListeningTime, "segundos");
+        resolve(true);
+      };
+      
+      request.onerror = () => {
+        console.error("❌ [SW-FOG] Error en request:", request.error);
+        reject(request.error);
+      };
+      
+      tx.oncomplete = () => {
+        console.log("✅ [SW-FOG] Transacción completada");
+      };
+      
+      tx.onerror = () => {
+        console.error("❌ [SW-FOG] Error en transacción:", tx.error);
+        reject(tx.error);
+      };
+    });
   } catch (error) {
-    console.error("❌ [SW-FOG] Error guardando:", error);
+    console.error("❌ [SW-FOG] Error guardando preferencias:", error);
+    return false;
   }
 }
 
 function trackPlayTime(songId, seconds, artist, genre) {
   userPreferences.playTime[songId] = (userPreferences.playTime[songId] || 0) + seconds;
   userPreferences.totalListeningTime += seconds;
-  if (artist) userPreferences.artistPlays[artist] = (userPreferences.artistPlays[artist] || 0) + 1;
-  if (genre) userPreferences.genrePlays[genre] = (userPreferences.genrePlays[genre] || 0) + 1;
   
-  console.log("⏱️ [SW-FOG] Tracking: " + songId + " +" + seconds + "s");
-  console.log("   🎤 Artista: " + artist + " (" + userPreferences.artistPlays[artist] + " plays)");
-  console.log("   🎵 Género: " + genre + " (" + userPreferences.genrePlays[genre] + " plays)");
+  // Solo incrementar conteo de artista/género UNA VEZ por canción
+  const songKey = `${songId}`;
+  if (!userPreferences.countedSongs) {
+    userPreferences.countedSongs = new Set();
+  }
+  
+  // Convertir de array a Set si viene de IndexedDB
+  if (Array.isArray(userPreferences.countedSongs)) {
+    userPreferences.countedSongs = new Set(userPreferences.countedSongs);
+  }
+  
+  if (!userPreferences.countedSongs.has(songKey)) {
+    userPreferences.countedSongs.add(songKey);
+    if (artist) userPreferences.artistPlays[artist] = (userPreferences.artistPlays[artist] || 0) + 1;
+    if (genre) userPreferences.genrePlays[genre] = (userPreferences.genrePlays[genre] || 0) + 1;
+    console.log("🎵 [SW-FOG] Nueva reproducción contada: " + songId);
+    console.log("   🎤 Artista: " + artist + " (" + userPreferences.artistPlays[artist] + " plays)");
+    console.log("   🎵 Género: " + genre + " (" + userPreferences.genrePlays[genre] + " plays)");
+  }
+  
+  console.log("⏱️ [SW-FOG] Tracking tiempo: " + songId + " +" + seconds + "s (Total: " + userPreferences.playTime[songId] + "s)");
   savePreferences();
+  
+  // Notificar a la app para actualización en tiempo real
+  notifyClientsOfUpdate();
 }
 
-function trackSearch(query) {
-  userPreferences.searchHistory.push({ query, timestamp: Date.now() });
+function trackSearch(query, artist, genre) {
+  // Guardar género y artista en lugar del texto buscado
+  const searchEntry = {
+    query: query,
+    artist: artist || null,
+    genre: genre || null,
+    timestamp: Date.now()
+  };
+  
+  userPreferences.searchHistory.push(searchEntry);
   if (userPreferences.searchHistory.length > 50) {
     userPreferences.searchHistory = userPreferences.searchHistory.slice(-50);
   }
-  console.log("🔍 [SW-FOG] Búsqueda: \"" + query + "\" (Total: " + userPreferences.searchHistory.length + ")");
+  
+  // Si hay artista/género, dar peso extra (búsquedas tienen más peso)
+  if (artist) {
+    userPreferences.artistPlays[artist] = (userPreferences.artistPlays[artist] || 0) + 2;
+    console.log("🔍 [SW-FOG] Búsqueda -> Artista: " + artist + " (+2 peso)");
+  }
+  if (genre) {
+    userPreferences.genrePlays[genre] = (userPreferences.genrePlays[genre] || 0) + 2;
+    console.log("🔍 [SW-FOG] Búsqueda -> Género: " + genre + " (+2 peso)");
+  }
+  
+  console.log("🔍 [SW-FOG] Búsqueda guardada (Total: " + userPreferences.searchHistory.length + ")");
   savePreferences();
+  notifyClientsOfUpdate();
 }
 
 function getTopArtists(limit) {
@@ -104,6 +187,54 @@ function getTopGenres(limit) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit || 5)
     .map(([genre, plays]) => ({ genre, plays }));
+}
+
+// Notificar a todos los clientes de actualizaciones en tiempo real
+async function notifyClientsOfUpdate() {
+  const clients = await self.clients.matchAll();
+  const payload = {
+    preferences: userPreferences,
+    topArtists: getTopArtists(5),
+    topGenres: getTopGenres(5),
+    totalListeningTime: userPreferences.totalListeningTime,
+    searchHistory: userPreferences.searchHistory.slice(-10),
+    likedSongs: userPreferences.likedSongs || []
+  };
+  
+  clients.forEach(client => {
+    client.postMessage({ type: "PREFERENCES_UPDATED", payload });
+  });
+}
+
+// Manejar likes de canciones
+function toggleLikeSong(songId, artist, genre) {
+  if (!userPreferences.likedSongs) {
+    userPreferences.likedSongs = [];
+  }
+  
+  const index = userPreferences.likedSongs.findIndex(s => s.songId === songId);
+  
+  if (index === -1) {
+    // Agregar like
+    userPreferences.likedSongs.push({ songId, artist, genre, timestamp: Date.now() });
+    // Likes tienen peso mayor (3 puntos)
+    if (artist) userPreferences.artistPlays[artist] = (userPreferences.artistPlays[artist] || 0) + 3;
+    if (genre) userPreferences.genrePlays[genre] = (userPreferences.genrePlays[genre] || 0) + 3;
+    console.log("❤️ [SW-FOG] Like agregado: " + songId);
+  } else {
+    // Quitar like
+    const song = userPreferences.likedSongs[index];
+    userPreferences.likedSongs.splice(index, 1);
+    // Restar peso
+    if (song.artist) userPreferences.artistPlays[song.artist] = Math.max(0, (userPreferences.artistPlays[song.artist] || 0) - 3);
+    if (song.genre) userPreferences.genrePlays[song.genre] = Math.max(0, (userPreferences.genrePlays[song.genre] || 0) - 3);
+    console.log("💔 [SW-FOG] Like removido: " + songId);
+  }
+  
+  savePreferences();
+  notifyClientsOfUpdate();
+  
+  return userPreferences.likedSongs.some(s => s.songId === songId);
 }
 
 function formatTime(seconds) {
@@ -203,7 +334,14 @@ self.addEventListener("message", async (event) => {
       trackPlayTime(payload.songId, payload.seconds, payload.artist, payload.genre);
       break;
     case "TRACK_SEARCH":
-      trackSearch(payload.query);
+      trackSearch(payload.query, payload.artist, payload.genre);
+      break;
+    case "TOGGLE_LIKE":
+      const isLiked = toggleLikeSong(payload.songId, payload.artist, payload.genre);
+      event.source.postMessage({ type: "LIKE_TOGGLED", payload: { songId: payload.songId, isLiked } });
+      break;
+    case "GET_LIKED_SONGS":
+      event.source.postMessage({ type: "LIKED_SONGS", payload: { likedSongs: userPreferences.likedSongs || [] } });
       break;
     case "GET_PREFERENCES":
       event.source.postMessage({
@@ -213,7 +351,8 @@ self.addEventListener("message", async (event) => {
           topArtists: getTopArtists(5),
           topGenres: getTopGenres(5),
           totalListeningTime: userPreferences.totalListeningTime,
-          searchHistory: userPreferences.searchHistory.slice(-10)
+          searchHistory: userPreferences.searchHistory.slice(-10),
+          likedSongs: userPreferences.likedSongs || []
         }
       });
       console.log("📤 [SW-FOG] Preferencias enviadas");
@@ -296,3 +435,10 @@ async function getCacheStatus() {
 }
 
 console.log("🎵 [SW] Fog Music Service Worker v2 cargado");
+
+// Cargar preferencias inmediatamente al cargar el SW
+(async () => {
+  console.log("🚀 [SW-FOG] Iniciando carga de preferencias...");
+  await loadPreferences();
+  console.log("✅ [SW-FOG] Preferencias listas al iniciar");
+})();

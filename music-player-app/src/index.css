@@ -6,17 +6,6 @@
   font-weight: 400;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  background-color: #111827;
-  color: #fff;
-  min-height: 100vh;
-}
 
 /* Scrollbar personalizado */
 ::-webkit-scrollbar {

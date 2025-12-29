@@ -6,33 +6,31 @@ import { useMusicContext } from "../App";
 import { trackSearch } from "../services/swService";
 
 export default function Library() {
-  const { songs, currentSong, isPlaying, isLoading, playSong } = useMusicContext();
+  const { songs, currentSong, isPlaying, isLoading, playSong, addToQueue } = useMusicContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGenre, setSelectedGenre] = useState("");
   const [sortBy, setSortBy] = useState("titulo");
   
-  // Debounce para tracking de búsquedas
-  const searchTimeoutRef = useRef(null);
+  // Guardar el último término de búsqueda para asociarlo con la canción reproducida
+  const lastSearchRef = useRef("");
 
-  // Trackear búsquedas con debounce
+  // Actualizar referencia del término de búsqueda
   useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
     if (searchTerm.length >= 2) {
-      searchTimeoutRef.current = setTimeout(() => {
-        console.log(`🔍 [Library] Tracking búsqueda: "${searchTerm}"`);
-        trackSearch(searchTerm);
-      }, 1000); // Esperar 1 segundo después de que el usuario deje de escribir
+      lastSearchRef.current = searchTerm;
     }
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
   }, [searchTerm]);
+
+  // Función para reproducir que trackea la búsqueda con el artista/género correcto
+  const handlePlaySong = (song) => {
+    // Si hay un término de búsqueda activo, trackear con los datos de la canción
+    if (lastSearchRef.current.length >= 2) {
+      console.log(`🔍 [Library] Búsqueda "${lastSearchRef.current}" -> Reproduciendo: ${song.artista} (${song.genero})`);
+      trackSearch(lastSearchRef.current, song.artista, song.genero);
+      lastSearchRef.current = ""; // Limpiar para no duplicar
+    }
+    playSong(song);
+  };
 
   // Obtener géneros únicos
   const genres = useMemo(() => {
@@ -64,7 +62,7 @@ export default function Library() {
   }, [songs, searchTerm, selectedGenre, sortBy]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-7xl mx-auto my-10 px-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -166,7 +164,8 @@ export default function Library() {
                 isCurrentSong={currentSong?.song_id === song.song_id}
                 isPlaying={isPlaying && currentSong?.song_id === song.song_id}
                 isLoading={isLoading && currentSong?.song_id === song.song_id}
-                onPlay={playSong}
+                onPlay={handlePlaySong}
+                onAddToQueue={addToQueue}
               />
             ))}
           </div>
