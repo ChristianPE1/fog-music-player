@@ -1,4 +1,3 @@
-// Servicio de AWS para Fog Music Player
 import { CognitoIdentityClient } from "@aws-sdk/client-cognito-identity";
 import { fromCognitoIdentityPool } from "@aws-sdk/credential-providers";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -209,9 +208,9 @@ export async function updateUserTastes(genero) {
 
 export async function syncPreferencesToDynamo(preferences, topArtists, topGenres) {
   console.log("[AWS] Sincronizando preferencias FOG...");
-  console.log("   Tiempo total escuchado:", preferences.totalListeningTime, "segundos");
-  console.log("   Top Artistas:", topArtists.length);
-  console.log("   Top Generos:", topGenres.length);
+  console.log("Tiempo total escuchado:", preferences.totalListeningTime, "segundos");
+  console.log("Top Artistas:", topArtists.length);
+  console.log("Top Generos:", topGenres.length);
 
   // Usar API Gateway si está configurada (mas seguro)
   if (awsConfig.apiGatewayUrl) {

@@ -1,4 +1,4 @@
-// Servicio de Recomendaciones y Preferencias (Fog Computing)
+// Servicio de Recomendaciones y Preferencias
 // Este servicio maneja la lógica de aprendizaje de gustos del usuario
 
 const PREFERENCES_KEY = "fog-music-preferences";

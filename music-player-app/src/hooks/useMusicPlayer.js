@@ -85,7 +85,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     const elapsedSinceLastReport = Math.floor(currentAudioTime - lastReportedTimeRef.current);
 
     if (elapsedSinceLastReport > 0) {
-      console.log(`⏱️ [Player] Reportando ${elapsedSinceLastReport}s de reproducción`);
+      console.log(`[Player] Reportando ${elapsedSinceLastReport}s de reproducción`);
       trackPlayTime(
         currentSong.song_id,
         elapsedSinceLastReport,
@@ -356,7 +356,7 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
       let audioUrl = prefetchCache.current.get(song.song_id);
       
       if (audioUrl) {
-        console.log("🚀 [Player] Usando audio pre-descargado:", song.titulo);
+        console.log("[Player] Usando audio pre-descargado:", song.titulo);
         prefetchCache.current.delete(song.song_id);
       } else {
         // Obtener key de S3 y desencriptar
@@ -550,7 +550,6 @@ export function useMusicPlayer(songs = [], userTastes = {}) {
     toggleLike,
     isLiked,
     formatTime,
-    // Nuevas funciones expuestas
     queueSize: QUEUE_SIZE,
     prefetchCount: PREFETCH_COUNT,
   };

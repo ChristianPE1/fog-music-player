@@ -10,7 +10,7 @@ let messageHandlers = new Map();
 
 export async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
-    console.warn("⚠️ Service Workers no soportados en este navegador");
+    console.warn("Service Workers no soportado");
     return null;
   }
 
@@ -24,11 +24,11 @@ export async function registerServiceWorker() {
     // Escuchar actualizaciones
     swRegistration.addEventListener("updatefound", () => {
       const newWorker = swRegistration.installing;
-      console.log("🔄 [SW-Service] Nueva versión del Service Worker encontrada");
+      console.log("[SW-Service] Nueva versión del SW encontrada");
 
       newWorker.addEventListener("statechange", () => {
         if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-          console.log("📢 [SW-Service] Nueva versión disponible, recarga para actualizar");
+          console.log("Recarga para actualizar");
         }
       });
     });

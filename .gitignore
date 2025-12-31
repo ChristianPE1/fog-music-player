@@ -11,3 +11,13 @@ venv/
 audios/
 miniaturas/
 .env
+
+# Archivos sensibles - NO subir a GitHub
+seed.py
+music-player-app/.env
+music-player-app/.env.local
+iac/.env
+
+# Scripts auxiliares locales
+clean_dynamodb.py
+generate_metadata.py

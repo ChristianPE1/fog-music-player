@@ -6,10 +6,6 @@ Sistema de reproduccion de musica con arquitectura Fog Computing para procesamie
 
 https://main.d2h8l8wagj7owc.amplifyapp.com/library
 
-## Miembros del Equipo
-- Christian Pardavé Espinoza
-- Saul Condori Machaca
-
 ## Arquitectura del Sistema
 
 ### Diagrama de Componentes
@@ -107,13 +103,6 @@ Calcula top generos y artistas
          v
 [Cada 3 min] Sincroniza con DynamoDB via API Gateway
 ```
-
-### Beneficios
-
-- **Baja latencia**: Las preferencias se procesan localmente en milisegundos
-- **Offline-first**: La aplicacion funciona sin conexion
-- **Privacidad**: Los datos granulares permanecen en el dispositivo
-- **Eficiencia**: Solo se envian datos agregados a la nube
 
 ---
 

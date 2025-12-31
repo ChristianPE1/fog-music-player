@@ -1,9 +1,6 @@
-"""
-Fog Music Player - Lambda API Handler
-Middleware de validacion y seguridad para operaciones con DynamoDB.
-Implementa el Principio de Minimo Privilegio: el frontend no tiene acceso
-directo a la base de datos, solo puede invocar esta Lambda via API Gateway.
-"""
+# Fog Music Player - Lambda API Handler
+# Middleware de validacion y seguridad para operaciones con DynamoDB.
+
 import json
 import boto3
 import os
@@ -27,7 +24,7 @@ CORS_HEADERS = {
 
 
 class DecimalEncoder(json.JSONEncoder):
-    """Encoder para manejar tipos Decimal de DynamoDB."""
+    # Encoder para manejar tipos Decimal de DynamoDB.
     def default(self, obj):
         if isinstance(obj, Decimal):
             return int(obj) if obj % 1 == 0 else float(obj)
@@ -35,7 +32,7 @@ class DecimalEncoder(json.JSONEncoder):
 
 
 def response(status_code, body):
-    """Genera una respuesta HTTP estandarizada."""
+    # Genera una respuesta HTTP
     return {
         'statusCode': status_code,
         'headers': CORS_HEADERS,
@@ -44,7 +41,7 @@ def response(status_code, body):
 
 
 def validate_device_id(device_id):
-    """Valida que el device_id sea un UUID valido."""
+    # Valida que el device_id sea un UUID valido.
     if not device_id or not isinstance(device_id, str):
         return False
     if len(device_id) < 10 or len(device_id) > 50:
@@ -53,7 +50,7 @@ def validate_device_id(device_id):
 
 
 def validate_tastes(tastes):
-    """Valida que los gustos sean un diccionario valido."""
+    # Valida que los gustos sean un diccionario valido.
     if not isinstance(tastes, dict):
         return False
     for key, value in tastes.items():
@@ -65,7 +62,7 @@ def validate_tastes(tastes):
 
 
 def handle_get_profile(body):
-    """Obtiene el perfil del usuario desde DynamoDB."""
+    # Obtiene el perfil del usuario desde DynamoDB.
     device_id = body.get('device_id')
     
     if not validate_device_id(device_id):
@@ -90,7 +87,7 @@ def handle_get_profile(body):
 
 
 def handle_update_tastes(body):
-    """Actualiza los gustos del usuario (incrementa contador de genero)."""
+    # Actualiza los gustos del usuario (incrementa contador de genero)
     device_id = body.get('device_id')
     genero = body.get('genero')
     
@@ -126,7 +123,7 @@ def handle_update_tastes(body):
 
 
 def handle_sync_preferences(body):
-    """Sincroniza preferencias completas desde el nodo FOG."""
+    # Sincroniza preferencias completas desde el nodo FOG
     device_id = body.get('device_id')
     preferences = body.get('preferences', {})
     top_artists = body.get('topArtists', [])
@@ -193,10 +190,9 @@ def handle_sync_preferences(body):
 
 
 def lambda_handler(event, context):
-    """
-    Handler principal de la Lambda.
-    Recibe peticiones de API Gateway y las enruta segun la accion.
-    """
+    # Handler principal de la Lambda.
+    # Recibe peticiones de API Gateway y las enruta segun la accion.
+
     # Manejar preflight CORS
     if event.get('httpMethod') == 'OPTIONS':
         return response(200, {'message': 'OK'})
