@@ -8,33 +8,6 @@ https://main.d2h8l8wagj7owc.amplifyapp.com/library
 
 ## Arquitectura del Sistema
 
-### Diagrama de Componentes
-
-```
-+-------------------+     +------------------+     +-------------------+
-|                   |     |                  |     |                   |
-|  Frontend (React) |---->|   API Gateway    |---->|  Lambda Function  |
-|  + Service Worker |     |   (Throttling)   |     |  (Validacion)     |
-|                   |     |                  |     |                   |
-+--------+----------+     +------------------+     +---------+---------+
-         |                                                   |
-         |                                                   v
-         |                                         +-------------------+
-         |    Credenciales Cognito                 |                   |
-         +---------------------------------------->|     DynamoDB      |
-         |    (Solo lectura catalogo)              |  (Songs + Users)  |
-         |                                         |                   |
-         |                                         +-------------------+
-         |
-         v
-+-------------------+
-|                   |
-|     S3 Bucket     |
-|  (Media + Thumbs) |
-|                   |
-+-------------------+
-```
-
 ### Componentes Principales
 
 **Frontend (React + Vite)**
@@ -72,10 +45,6 @@ https://main.d2h8l8wagj7owc.amplifyapp.com/library
 ---
 
 ## Fog Computing
-
-### Concepto
-
-El paradigma Fog Computing se implementa mediante un Service Worker que actua como nodo de procesamiento intermedio entre el dispositivo del usuario y la nube. Este enfoque reduce la latencia, minimiza el consumo de ancho de banda y mejora la privacidad del usuario.
 
 ### Implementacion
 
@@ -215,25 +184,6 @@ El sistema implementa una estrategia de defensa en profundidad utilizando servic
         *   Solo la función Lambda tiene permisos de escritura (`PutItem`, `UpdateItem`).
     *   **Credenciales Temporales**: Los tokens de acceso rotan automáticamente cada hora.
 
-### Flujo de Datos Seguro
-
-```mermaid
-sequenceDiagram
-    participant User as Frontend (React)
-    participant API as API Gateway
-    participant Lambda as Lambda Function
-    participant DB as DynamoDB
-
-    User->>API: POST /api (Action: sync_preferences)
-    Note over API: Verifica Rate Limit & API Key
-    API->>Lambda: Invoca función
-    Note over Lambda: Valida Schema & Tipos
-    Lambda->>DB: PutItem (Solo si es válido)
-    DB-->>Lambda: Confirmación
-    Lambda-->>API: 200 OK
-    API-->>User: Success
-```
-
 ---
 
 ## Despliegue con AWS Amplify
@@ -326,32 +276,6 @@ Cognito proporciona credenciales temporales de AWS para usuarios anonimos, elimi
     }
   ]
 }
-```
-
----
-
-## Estructura del Proyecto
-
-```
-fog-music-player/
-├── iac/                    # Infraestructura como codigo
-│   ├── __main__.py         # Definicion Pulumi
-│   ├── lambda/
-│   │   └── handler.py      # Codigo de la Lambda
-│   └── Pulumi.yaml
-├── music-player-app/       # Aplicacion frontend
-│   ├── public/
-│   │   └── sw.js           # Service Worker (Fog Node)
-│   ├── src/
-│   │   ├── components/     # Componentes React
-│   │   ├── pages/          # Paginas de la app
-│   │   ├── services/       # Servicios AWS y SW
-│   │   ├── hooks/          # Custom hooks
-│   │   └── config/         # Configuracion
-│   └── package.json
-├── audios/                 # Archivos de audio fuente
-├── miniaturas/             # Imagenes de albums
-└── seed.py                 # Script de poblacion de datos
 ```
 
 ---
