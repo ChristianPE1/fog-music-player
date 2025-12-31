@@ -107,7 +107,10 @@ export async function getUserFullProfile() {
     try {
       const response = await fetch(awsConfig.apiGatewayUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': awsConfig.apiKey  
+        },
         body: JSON.stringify({
           action: 'get_profile',
           device_id: getDeviceId()
@@ -158,7 +161,10 @@ export async function updateUserTastes(genero) {
     try {
       const response = await fetch(awsConfig.apiGatewayUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': awsConfig.apiKey  
+        },
         body: JSON.stringify({
           action: 'update_tastes',
           device_id: getDeviceId(),
@@ -217,7 +223,10 @@ export async function syncPreferencesToDynamo(preferences, topArtists, topGenres
     try {
       const response = await fetch(awsConfig.apiGatewayUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': awsConfig.apiKey  
+        },
         body: JSON.stringify({
           action: 'sync_preferences',
           device_id: getDeviceId(),

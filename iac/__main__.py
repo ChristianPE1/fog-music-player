@@ -247,12 +247,14 @@ api_resource = aws.apigateway.Resource(
 )
 
 # Metodo POST /api
+# Metodo POST /api (requiere API Key)
 api_method_post = aws.apigateway.Method(
     "fog-music-api-method-post",
     rest_api=api_gateway.id,
     resource_id=api_resource.id,
     http_method="POST",
-    authorization="NONE"
+    authorization="NONE",
+    api_key_required=True
 )
 
 # Metodo OPTIONS /api (CORS preflight)
@@ -311,7 +313,7 @@ api_integration_response_options = aws.apigateway.IntegrationResponse(
     http_method=api_method_options.http_method,
     status_code="200",
     response_parameters={
-        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,Authorization,x-api-key'",
         "method.response.header.Access-Control-Allow-Methods": "'POST,OPTIONS'",
         "method.response.header.Access-Control-Allow-Origin": "'*'"
     },
@@ -359,12 +361,197 @@ api_method_settings = aws.apigateway.MethodSettings(
     stage_name=api_stage.stage_name,
     method_path="*/*",
     settings=aws.apigateway.MethodSettingsSettingsArgs(
-        throttling_burst_limit=100,
-        throttling_rate_limit=50,
+        throttling_burst_limit=20,
+        throttling_rate_limit=10,
         logging_level="INFO",
         data_trace_enabled=True
     ),
     opts=pulumi.ResourceOptions(depends_on=[api_gateway_account])
+)
+
+# ============================================
+# API Key y Usage Plan
+# ============================================
+
+# Crear API Key para la aplicación
+api_key = aws.apigateway.ApiKey(
+    "fog-music-api-key",
+    name="fog-music-web-client-key",
+    description="API Key para Fog Music Player Web Client",
+    enabled=True,
+    tags={
+        "Project": "fog-music",
+        "Environment": "dev"
+    }
+)
+
+# Crear Usage Plan con límites de uso
+usage_plan = aws.apigateway.UsagePlan(
+    "fog-music-usage-plan",
+    name="fog-music-standard-plan",
+    description="Plan de uso estándar para Fog Music Player",
+    api_stages=[
+        aws.apigateway.UsagePlanApiStageArgs(
+            api_id=api_gateway.id,
+            stage=api_stage.stage_name
+        )
+    ],
+    quota_settings=aws.apigateway.UsagePlanQuotaSettingsArgs(
+        limit=10000,  # 10,000 peticiones máximo
+        period="DAY"  # por día
+    ),
+    throttle_settings=aws.apigateway.UsagePlanThrottleSettingsArgs(
+        burst_limit=20,  # Consistente con throttling del stage
+        rate_limit=10
+    ),
+    tags={
+        "Project": "fog-music",
+        "Environment": "dev"
+    },
+    opts=pulumi.ResourceOptions(depends_on=[api_stage])
+)
+
+# Asociar API Key al Usage Plan
+usage_plan_key = aws.apigateway.UsagePlanKey(
+    "fog-music-usage-plan-key",
+    key_id=api_key.id,
+    key_type="API_KEY",
+    usage_plan_id=usage_plan.id
+)
+
+# ============================================
+# AWS WAF - Web Application Firewall
+# ============================================
+
+# Crear WAF Web ACL con reglas de protección
+waf_web_acl = aws.wafv2.WebAcl(
+    "fog-music-waf",
+    name="fog-music-api-protection",
+    description="WAF para proteger Fog Music API contra ataques web",
+    scope="REGIONAL",  # Para API Gateway
+    default_action=aws.wafv2.WebAclDefaultActionArgs(
+        allow=aws.wafv2.WebAclDefaultActionAllowArgs()
+    ),
+    visibility_config=aws.wafv2.WebAclVisibilityConfigArgs(
+        cloudwatch_metrics_enabled=True,
+        metric_name="fog-music-waf-metrics",
+        sampled_requests_enabled=True
+    ),
+    rules=[
+        # Regla 1: AWS Managed Rules - Common Rule Set (SQL injection, XSS, etc.)
+        aws.wafv2.WebAclRuleArgs(
+            name="AWSManagedRulesCommonRuleSet",
+            priority=1,
+            override_action=aws.wafv2.WebAclRuleOverrideActionArgs(
+                none=aws.wafv2.WebAclRuleOverrideActionNoneArgs()
+            ),
+            statement=aws.wafv2.WebAclRuleStatementArgs(
+                managed_rule_group_statement=aws.wafv2.WebAclRuleStatementManagedRuleGroupStatementArgs(
+                    name="AWSManagedRulesCommonRuleSet",
+                    vendor_name="AWS"
+                )
+            ),
+            visibility_config=aws.wafv2.WebAclRuleVisibilityConfigArgs(
+                cloudwatch_metrics_enabled=True,
+                metric_name="CommonRuleSetMetric",
+                sampled_requests_enabled=True
+            )
+        ),
+        # Regla 2: AWS Managed Rules - Known Bad Inputs (path traversal, etc.)
+        aws.wafv2.WebAclRuleArgs(
+            name="AWSManagedRulesKnownBadInputsRuleSet",
+            priority=2,
+            override_action=aws.wafv2.WebAclRuleOverrideActionArgs(
+                none=aws.wafv2.WebAclRuleOverrideActionNoneArgs()
+            ),
+            statement=aws.wafv2.WebAclRuleStatementArgs(
+                managed_rule_group_statement=aws.wafv2.WebAclRuleStatementManagedRuleGroupStatementArgs(
+                    name="AWSManagedRulesKnownBadInputsRuleSet",
+                    vendor_name="AWS"
+                )
+            ),
+            visibility_config=aws.wafv2.WebAclRuleVisibilityConfigArgs(
+                cloudwatch_metrics_enabled=True,
+                metric_name="KnownBadInputsMetric",
+                sampled_requests_enabled=True
+            )
+        ),
+        # Regla 3: AWS Managed Rules - SQL Database (protección específica contra SQL injection)
+        aws.wafv2.WebAclRuleArgs(
+            name="AWSManagedRulesSQLiRuleSet",
+            priority=3,
+            override_action=aws.wafv2.WebAclRuleOverrideActionArgs(
+                none=aws.wafv2.WebAclRuleOverrideActionNoneArgs()
+            ),
+            statement=aws.wafv2.WebAclRuleStatementArgs(
+                managed_rule_group_statement=aws.wafv2.WebAclRuleStatementManagedRuleGroupStatementArgs(
+                    name="AWSManagedRulesSQLiRuleSet",
+                    vendor_name="AWS"
+                )
+            ),
+            visibility_config=aws.wafv2.WebAclRuleVisibilityConfigArgs(
+                cloudwatch_metrics_enabled=True,
+                metric_name="SQLiRuleSetMetric",
+                sampled_requests_enabled=True
+            )
+        ),
+        # Regla 4: Rate limiting por IP (100 peticiones por 5 minutos)
+        aws.wafv2.WebAclRuleArgs(
+            name="RateLimitPerIP",
+            priority=4,
+            action=aws.wafv2.WebAclRuleActionArgs(
+                block=aws.wafv2.WebAclRuleActionBlockArgs()
+            ),
+            statement=aws.wafv2.WebAclRuleStatementArgs(
+                rate_based_statement=aws.wafv2.WebAclRuleStatementRateBasedStatementArgs(
+                    limit=100,  # Máximo 100 peticiones por 5 minutos por IP
+                    aggregate_key_type="IP"
+                )
+            ),
+            visibility_config=aws.wafv2.WebAclRuleVisibilityConfigArgs(
+                cloudwatch_metrics_enabled=True,
+                metric_name="RateLimitMetric",
+                sampled_requests_enabled=True
+            )
+        ),
+        # Regla 5: Bloquear bots maliciosos conocidos
+        aws.wafv2.WebAclRuleArgs(
+            name="AWSManagedRulesBotControlRuleSet",
+            priority=5,
+            override_action=aws.wafv2.WebAclRuleOverrideActionArgs(
+                none=aws.wafv2.WebAclRuleOverrideActionNoneArgs()
+            ),
+            statement=aws.wafv2.WebAclRuleStatementArgs(
+                managed_rule_group_statement=aws.wafv2.WebAclRuleStatementManagedRuleGroupStatementArgs(
+                    name="AWSManagedRulesBotControlRuleSet",
+                    vendor_name="AWS",
+                    managed_rule_group_configs=[
+                        aws.wafv2.WebAclRuleStatementManagedRuleGroupStatementManagedRuleGroupConfigArgs(
+                            aws_managed_rules_bot_control_rule_set=aws.wafv2.WebAclRuleStatementManagedRuleGroupStatementManagedRuleGroupConfigAwsManagedRulesBotControlRuleSetArgs(
+                                inspection_level="COMMON"
+                            )
+                        )
+                    ]
+                )
+            ),
+            visibility_config=aws.wafv2.WebAclRuleVisibilityConfigArgs(
+                cloudwatch_metrics_enabled=True,
+                metric_name="BotControlMetric",
+                sampled_requests_enabled=True
+            )
+        )
+    ],
+    tags={
+        "Project": "fog-music",
+        "Environment": "dev"
+    }
+)
+
+# Asociar WAF con API Gateway Stage
+waf_association = aws.wafv2.WebAclAssociation(
+    "fog-music-waf-association",
+    resource_arn=api_stage.arn,
+    web_acl_arn=waf_web_acl.arn
 )
 
 # ============================================
@@ -482,3 +669,10 @@ pulumi.export("api_gateway_id", api_gateway.id)
 pulumi.export("api_gateway_url", pulumi.Output.all(api_gateway.id, api_stage.stage_name).apply(
     lambda args: f"https://{args[0]}.execute-api.us-east-1.amazonaws.com/{args[1]}/api"
 ))
+
+# Output de API Key (valor sensible)
+pulumi.export("api_key_id", api_key.id)
+pulumi.export("api_key_value", api_key.value)
+
+# Output de WAF
+pulumi.export("waf_web_acl_arn", waf_web_acl.arn)

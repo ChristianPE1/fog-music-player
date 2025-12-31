@@ -6,7 +6,8 @@ export const awsConfig = {
   s3Bucket: import.meta.env.VITE_S3_MEDIA_BUCKET,
   dynamoDbTable: import.meta.env.VITE_DYNAMODB_SONGS_TABLE,
   usersTable: import.meta.env.VITE_DYNAMODB_USERS_TABLE,
-  apiGatewayUrl: import.meta.env.VITE_API_GATEWAY_URL
+  apiGatewayUrl: import.meta.env.VITE_API_GATEWAY_URL,
+  apiKey: import.meta.env.VITE_API_KEY
 };
 
 // Clave de encriptación
